@@ -61,65 +61,8 @@ def total_cost_and_metrics(
     }
 
 
-def select_fleet_greedy(
-    df: pd.DataFrame,
-    cargo_demand_tonnes: float,
-    min_avg_safety: float = 3.0,
-    require_all_fuel_types: bool = True,
-    cost_col: str = "total_cost_usd",
-) -> list[str | int]:
-    """
-    Greedy fleet selection: sort by cost per DWT (efficiency), add ships until
-    demand is met and constraints satisfied. Then enforce one-per-fuel-type and
-    average safety.
-    """
-    df = df.copy()
-    df["cost_per_dwt"] = df[cost_col] / df["dwt"].clip(lower=1)
-
-    selected: list[str | int] = []
-    remaining = df.sort_values("cost_per_dwt").copy()
-
-    # Ensure at least one per main_engine_fuel_type
-    if require_all_fuel_types:
-        for ft in remaining["main_engine_fuel_type"].unique():
-            cand = remaining[remaining["main_engine_fuel_type"] == ft]
-            if cand.empty:
-                continue
-            best = cand.loc[cand[cost_col].idxmin()]
-            vid = best["vessel_id"]
-            if vid not in selected:
-                selected.append(vid)
-        remaining = remaining[~remaining["vessel_id"].isin(selected)]
-
-    # Fill remaining demand with cheapest cost-per-DWT
-    current_dwt = df[df["vessel_id"].isin(selected)]["dwt"].sum()
-    remaining = remaining.sort_values("cost_per_dwt")
-
-    for _, row in remaining.iterrows():
-        if current_dwt >= cargo_demand_tonnes:
-            break
-        vid = row["vessel_id"]
-        selected.append(vid)
-        current_dwt += row["dwt"]
-
-    # Drop worst cost ships until average safety >= min_avg_safety if needed
-    subset = df[df["vessel_id"].isin(selected)]
-    while subset["safety_score"].mean() < min_avg_safety and len(selected) > 1:
-        # Remove ship that improves avg safety most when removed (lowest safety first)
-        worst = subset.loc[subset["safety_score"].idxmin()]
-        selected.remove(worst["vessel_id"])
-        subset = df[df["vessel_id"].isin(selected)]
-        if subset["dwt"].sum() < cargo_demand_tonnes:
-            selected.append(worst["vessel_id"])
-            break
-
-    ok, errs = validate_fleet(
-        df, selected, cargo_demand_tonnes, min_avg_safety, require_all_fuel_types
-    )
-    if not ok:
-        raise ValueError("Greedy fleet invalid: " + "; ".join(errs))
-
-    return selected
+def select_fleet_greedy(*args, **kwargs):
+    raise NotImplementedError("Replaced by MILP in Phase 2")
 
 
 def format_outputs(metrics: dict[str, Any], sensitivity_done: bool = False) -> dict[str, Any]:
