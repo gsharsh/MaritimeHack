@@ -524,3 +524,122 @@ def format_carbon_sweep_table(results: list[dict[str, Any]]) -> pd.DataFrame:
             })
 
     return pd.DataFrame(rows)
+
+
+def run_diversity_whatif(
+    df: pd.DataFrame,
+    cargo_demand: float = MONTHLY_DEMAND,
+    safety_threshold: float = SAFETY_THRESHOLD,
+) -> dict[str, Any]:
+    """
+    Compare fleet selection with and without fuel diversity constraint.
+
+    Returns dict with:
+    - with_diversity: metrics when require_all_fuel_types=True
+    - without_diversity: metrics when require_all_fuel_types=False
+    - cost_savings: cost difference (negative = cheaper without diversity)
+    - fleet_size_diff: fleet size difference
+    - fuel_types_lost: fuel types present with diversity but missing without
+    """
+    # --- With diversity constraint ---
+    with_ids = select_fleet_milp(
+        df, cargo_demand=cargo_demand, min_avg_safety=safety_threshold,
+        require_all_fuel_types=True,
+    )
+    if with_ids:
+        with_metrics = total_cost_and_metrics(df, with_ids)
+        with_subset = df[df["vessel_id"].isin(with_ids)]
+        with_fuel_types = set(with_subset["main_engine_fuel_type"].unique())
+        with_fuel_counts = with_subset["main_engine_fuel_type"].value_counts().to_dict()
+    else:
+        with_metrics = None
+        with_fuel_types = set()
+        with_fuel_counts = {}
+
+    # --- Without diversity constraint ---
+    without_ids = select_fleet_milp(
+        df, cargo_demand=cargo_demand, min_avg_safety=safety_threshold,
+        require_all_fuel_types=False,
+    )
+    if without_ids:
+        without_metrics = total_cost_and_metrics(df, without_ids)
+        without_subset = df[df["vessel_id"].isin(without_ids)]
+        without_fuel_types = set(without_subset["main_engine_fuel_type"].unique())
+        without_fuel_counts = without_subset["main_engine_fuel_type"].value_counts().to_dict()
+    else:
+        without_metrics = None
+        without_fuel_types = set()
+        without_fuel_counts = {}
+
+    result: dict[str, Any] = {
+        "with_diversity": {
+            "feasible": with_ids is not None and len(with_ids) > 0,
+            "selected_ids": with_ids or [],
+            "metrics": with_metrics,
+            "fuel_type_counts": with_fuel_counts,
+            "fuel_types": with_fuel_types,
+        },
+        "without_diversity": {
+            "feasible": without_ids is not None and len(without_ids) > 0,
+            "selected_ids": without_ids or [],
+            "metrics": without_metrics,
+            "fuel_type_counts": without_fuel_counts,
+            "fuel_types": without_fuel_types,
+        },
+    }
+
+    # Compute savings and differences
+    if with_metrics and without_metrics:
+        result["cost_savings"] = without_metrics["total_cost_usd"] - with_metrics["total_cost_usd"]
+        result["fleet_size_diff"] = without_metrics["fleet_size"] - with_metrics["fleet_size"]
+        result["fuel_types_lost"] = with_fuel_types - without_fuel_types
+    else:
+        result["cost_savings"] = None
+        result["fleet_size_diff"] = None
+        result["fuel_types_lost"] = set()
+
+    return result
+
+
+def compute_fleet_efficiency(
+    df: pd.DataFrame,
+    selected_ids: list[int],
+    cargo_demand: float = MONTHLY_DEMAND,
+) -> dict[str, Any]:
+    """
+    Compute fleet efficiency metrics for a selected fleet.
+
+    Returns dict with:
+    - cost_per_dwt: total_cost / total_dwt ($/tonne capacity)
+    - cost_per_vessel: total_cost / fleet_size
+    - dwt_per_vessel: total_dwt / fleet_size (average vessel size)
+    - co2_per_dwt: total_co2e / total_dwt (emissions intensity)
+    - utilization: total_dwt / cargo_demand (capacity utilization ratio)
+    """
+    if not selected_ids:
+        return {
+            "cost_per_dwt": None,
+            "cost_per_vessel": None,
+            "dwt_per_vessel": None,
+            "co2_per_dwt": None,
+            "utilization": None,
+            "note": "no fleet selected",
+        }
+
+    metrics = total_cost_and_metrics(df, selected_ids)
+    total_cost = metrics["total_cost_usd"]
+    total_dwt = metrics["total_dwt"]
+    fleet_size = metrics["fleet_size"]
+    total_co2e = metrics["total_co2e_tonnes"]
+
+    return {
+        "cost_per_dwt": total_cost / total_dwt if total_dwt > 0 else None,
+        "cost_per_vessel": total_cost / fleet_size if fleet_size > 0 else None,
+        "dwt_per_vessel": total_dwt / fleet_size if fleet_size > 0 else None,
+        "co2_per_dwt": total_co2e / total_dwt if total_dwt > 0 else None,
+        "utilization": total_dwt / cargo_demand if cargo_demand > 0 else None,
+        "total_cost": total_cost,
+        "total_dwt": total_dwt,
+        "fleet_size": fleet_size,
+        "total_co2e": total_co2e,
+    }
