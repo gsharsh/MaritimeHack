@@ -49,7 +49,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01: TDD — Build select_fleet_milp() with PuLP binary MILP (TDD plan)
+- [ ] 02-02: Wire MILP into run.py, fix column defaults, add CLI args (2 tasks)
 
 ### Phase 3: Validation
 **Goal**: Run MILP on test fixtures and verify: (1) each checkpoint vessel's cost matches SOP ±2%, (2) fleet solution falls within expected ranges (25-40 ships, $25M-$40M total, avg safety 3.0-3.5, all 8 fuel types), (3) all constraints satisfied.
