@@ -17,7 +17,7 @@ None
 - [x] **Phase 1: Clean Slate & Data Foundation** - Delete placeholder code, set up lookup tables/constants, test fixtures, per_vessel.csv adapter
 - [x] **Phase 2: MILP Fleet Optimizer** - Replace greedy solver with PuLP MILP (Step 7)
 - [x] **Phase 3: Validation** - Verify MILP against 5 checkpoint vessels and expected ranges
-- [ ] **Phase 4: Safety Threshold Sweep** - Re-run MILP at 3.0/3.5/4.0/4.5, compare results (Step 10)
+- [x] **Phase 4: Safety Threshold Sweep** - Re-run MILP at 3.0/3.5/4.0/4.5, compare results (Step 10)
 - [ ] **Phase 5: Cost-Emissions Pareto Frontier** - Epsilon-constraint method, shadow carbon prices, carbon price sweep (Step 8)
 - [ ] **Phase 6: Submission & Charts** - Fill submission CSV, Pareto chart, fleet bars, safety table
 
@@ -68,7 +68,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 04-01: TBD
+- [x] 04-01: Implement safety sweep function and wire into CLI (2 tasks) ✓
 
 ### Phase 5: Cost-Emissions Pareto Frontier
 **Goal**: Epsilon-constraint method: sweep CO2eq cap from fleet-max to fleet-min in 15 steps. At each point solve MILP with additional constraint Σ x_i × CO2eq_i <= epsilon. Record cost/emissions/fleet at each point. Compute shadow carbon price (marginal cost per tonne CO2eq reduced). Also run carbon price sweep at $80/$120/$160/$200 (recomputing final_cost with new carbon_cost before re-solving MILP).
@@ -98,6 +98,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 (and 5 in parallel) → 6
 | 1. Clean Slate & Data Foundation | 3/3 | Complete | 2026-02-06 |
 | 2. MILP Fleet Optimizer | 2/2 | Complete | 2026-02-06 |
 | 3. Validation | 1/1 | Complete | 2026-02-06 |
-| 4. Safety Threshold Sweep | 0/? | Not started | - |
+| 4. Safety Threshold Sweep | 1/1 | Complete | 2026-02-06 |
 | 5. Cost-Emissions Pareto Frontier | 0/? | Not started | - |
 | 6. Submission & Charts | 0/? | Not started | - |

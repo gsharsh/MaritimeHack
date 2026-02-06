@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Produce a correct, optimal fleet selection via MILP that minimizes total cost while satisfying all constraints — this is the submission answer.
-**Current focus:** Phase 3 complete — ready for Phase 4 (Safety Threshold Sweep)
+**Current focus:** Phase 4 complete — ready for Phase 5 (Cost-Emissions Pareto Frontier)
 
 ## Current Position
 
-Phase: 3 of 6 (Validation) — COMPLETE
+Phase: 4 of 6 (Safety Threshold Sweep) — COMPLETE
 Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-02-06 — Completed 03-01-PLAN.md
+Last activity: 2026-02-06 — Completed 04-01-PLAN.md
 
-Progress: ██████░░░░ 60%
+Progress: ███████░░░ 70%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: 3 min
-- Total execution time: 18 min
+- Total execution time: 20 min
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: ██████░░░░ 60%
 | 1 | 3/3 | 11 min | 4 min |
 | 2 | 2/2 | 4 min | 2 min |
 | 3 | 1/1 | 3 min | 3 min |
+| 4 | 1/1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (3 min), 02-01 (3 min), 02-02 (1 min), 03-01 (3 min)
-- Trend: consistent ~3 min/plan
+- Last 5 plans: 02-01 (3 min), 02-02 (1 min), 03-01 (3 min), 04-01 (2 min)
+- Trend: consistent ~2-3 min/plan
 
 ## Accumulated Context
 
@@ -55,6 +56,7 @@ Recent decisions affecting current work:
 - Column defaults match per_vessel.csv: final_cost, FC_total, CO2eq
 - Infeasible exits with sys.exit(1) for clean CLI behavior
 - Integer comparison for final_cost, pytest.approx for CO2eq
+- Infeasible thresholds shown as INFEASIBLE in sweep table (not omitted)
 
 ### Deferred Issues
 
@@ -67,6 +69,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-06T12:24:13Z
-Stopped at: Completed 03-01-PLAN.md — Phase 3 complete
+Last session: 2026-02-06T12:29:30Z
+Stopped at: Completed 04-01-PLAN.md — Phase 4 complete
 Resume file: None
