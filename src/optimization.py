@@ -69,6 +69,7 @@ def select_fleet_milp(
     cargo_demand: float = MONTHLY_DEMAND,
     min_avg_safety: float = SAFETY_THRESHOLD,
     require_all_fuel_types: bool = True,
+    co2_cap: float | None = None,
 ) -> list[int]:
     """
     Select minimum-cost fleet via binary MILP.
@@ -79,6 +80,7 @@ def select_fleet_milp(
         1. sum(x_i * dwt_i) >= cargo_demand
         2. sum(x_i * (safety_i - min_avg_safety)) >= 0  (linearized avg safety)
         3. For each fuel type f: sum(x_i where fuel==f) >= 1  (if require_all_fuel_types)
+        4. sum(x_i * co2eq_i) <= co2_cap  (if co2_cap is not None)
 
     Returns sorted list of selected vessel_id integers, or empty list if infeasible.
     """
@@ -106,6 +108,11 @@ def select_fleet_milp(
         for ft in fuel_types:
             ft_indices = df.index[df["main_engine_fuel_type"] == ft].tolist()
             prob += lpSum([x[i] for i in ft_indices]) >= 1, f"Fuel_{ft}"
+
+    # Constraint 4 (optional): CO2eq emissions cap
+    if co2_cap is not None:
+        co2eqs = df["CO2eq"].tolist()
+        prob += lpSum([co2eqs[i] * x[i] for i in indices]) <= co2_cap, "CO2_cap"
 
     prob.solve(PULP_CBC_CMD(msg=0))
 
