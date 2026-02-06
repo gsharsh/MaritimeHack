@@ -29,6 +29,10 @@ from src.sensitivity import (
     format_pareto_table,
     run_carbon_price_sweep,
     format_carbon_sweep_table,
+    compute_shadow_prices,
+    format_shadow_prices,
+    run_diversity_whatif,
+    compute_fleet_efficiency,
 )
 from src.charts import plot_pareto_frontier, plot_fleet_composition, plot_safety_comparison
 
@@ -104,10 +108,16 @@ def main() -> None:
         help="Report file name for submission CSV",
     )
     parser.add_argument(
+        "--shadow-prices",
+        action="store_true",
+        default=False,
+        help="Run shadow prices, diversity what-if, and fleet efficiency analysis",
+    )
+    parser.add_argument(
         "--all",
         action="store_true",
         default=False,
-        help="Run everything: --sweep --pareto --carbon-sweep --submit",
+        help="Run everything: --sweep --pareto --carbon-sweep --submit --shadow-prices",
     )
     args = parser.parse_args()
 
@@ -117,6 +127,7 @@ def main() -> None:
         args.pareto = True
         args.carbon_sweep = True
         args.submit = True
+        args.shadow_prices = True
 
     # --- Load data -----------------------------------------------------------
     print("=" * 60)
@@ -301,6 +312,101 @@ def main() -> None:
                 print(f"  ${r['carbon_price']}/t: {len(counts)} types — {composition}")
             else:
                 print(f"  ${r['carbon_price']}/t: INFEASIBLE")
+
+        print("=" * 60)
+
+    # --- Shadow prices, diversity what-if, efficiency ----------------------------
+    if args.shadow_prices:
+        # Shadow Prices
+        print(f"\n{'=' * 60}")
+        print("Shadow Prices (Constraint Perturbation)")
+        print(f"{'=' * 60}")
+
+        shadow_results = compute_shadow_prices(
+            df, cargo_demand=args.cargo_demand, safety_threshold=args.safety_threshold
+        )
+        print()
+        print(format_shadow_prices(shadow_results))
+
+        # Fleet size changes
+        if shadow_results.get("base_fleet_size") is not None:
+            print(f"\n  Fleet size changes:")
+            print(f"    Base fleet size: {shadow_results['base_fleet_size']}")
+            if shadow_results.get("perturbed_fleet_size_dwt") is not None:
+                print(f"    +1% DWT demand: {shadow_results['perturbed_fleet_size_dwt']} vessels")
+            if shadow_results.get("perturbed_fleet_size_safety") is not None:
+                print(f"    +0.1 safety:    {shadow_results['perturbed_fleet_size_safety']} vessels")
+
+        print("=" * 60)
+
+        # Diversity What-If
+        print(f"\n{'=' * 60}")
+        print("Fuel Diversity What-If Analysis")
+        print(f"{'=' * 60}")
+
+        whatif = run_diversity_whatif(
+            df, cargo_demand=args.cargo_demand, safety_threshold=args.safety_threshold
+        )
+
+        wd = whatif["with_diversity"]
+        wod = whatif["without_diversity"]
+
+        print(f"\n  {'Metric':<30} {'With Diversity':>18} {'Without Diversity':>18}")
+        print(f"  {'-' * 30} {'-' * 18} {'-' * 18}")
+
+        if wd["feasible"] and wod["feasible"]:
+            wm = wd["metrics"]
+            wom = wod["metrics"]
+            print(f"  {'Fleet size':<30} {wm['fleet_size']:>18} {wom['fleet_size']:>18}")
+            print(f"  {'Total cost ($)':<30} {wm['total_cost_usd']:>18,.2f} {wom['total_cost_usd']:>18,.2f}")
+            print(f"  {'Total CO2eq (t)':<30} {wm['total_co2e_tonnes']:>18,.2f} {wom['total_co2e_tonnes']:>18,.2f}")
+            print(f"  {'Avg safety score':<30} {wm['avg_safety_score']:>18.2f} {wom['avg_safety_score']:>18.2f}")
+            print(f"  {'Fuel types':<30} {len(wd['fuel_types']):>18} {len(wod['fuel_types']):>18}")
+
+            print(f"\n  Cost of diversity constraint: ${whatif['cost_savings']:,.2f}")
+            if whatif["cost_savings"] < 0:
+                print(f"    (Fleet is ${abs(whatif['cost_savings']):,.2f} cheaper WITHOUT diversity)")
+            elif whatif["cost_savings"] > 0:
+                print(f"    (Fleet is ${whatif['cost_savings']:,.2f} cheaper WITH diversity)")
+            else:
+                print(f"    (No cost difference)")
+
+            print(f"  Fleet size difference: {whatif['fleet_size_diff']}")
+
+            if whatif["fuel_types_lost"]:
+                print(f"  Fuel types lost without diversity: {whatif['fuel_types_lost']}")
+            else:
+                print(f"  Fuel types lost without diversity: none")
+        else:
+            if not wd["feasible"]:
+                print(f"  With diversity: INFEASIBLE")
+            if not wod["feasible"]:
+                print(f"  Without diversity: INFEASIBLE")
+
+        print("=" * 60)
+
+        # Fleet Efficiency
+        print(f"\n{'=' * 60}")
+        print("Fleet Efficiency Metrics")
+        print(f"{'=' * 60}")
+
+        efficiency = compute_fleet_efficiency(
+            df, selected_ids, cargo_demand=args.cargo_demand
+        )
+
+        if efficiency.get("cost_per_dwt") is not None:
+            print(f"\n  Cost per DWT:      ${efficiency['cost_per_dwt']:,.4f} /tonne capacity")
+            print(f"  Cost per vessel:   ${efficiency['cost_per_vessel']:,.2f}")
+            print(f"  DWT per vessel:    {efficiency['dwt_per_vessel']:,.0f} tonnes")
+            print(f"  CO2eq per DWT:     {efficiency['co2_per_dwt']:.6f} tCO2eq/tDWT")
+            print(f"  Capacity util:     {efficiency['utilization']:.2%} (DWT / demand)")
+            print(f"\n  Totals:")
+            print(f"    Fleet size:      {efficiency['fleet_size']} vessels")
+            print(f"    Total cost:      ${efficiency['total_cost']:,.2f}")
+            print(f"    Total DWT:       {efficiency['total_dwt']:,.0f} tonnes")
+            print(f"    Total CO2eq:     {efficiency['total_co2e']:,.2f} tonnes")
+        else:
+            print(f"\n  No fleet selected — efficiency metrics unavailable.")
 
         print("=" * 60)
 
