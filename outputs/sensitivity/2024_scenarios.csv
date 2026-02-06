@@ -1,4 +1,1 @@
-scenario_name,total_dwt,total_cost_usd,avg_safety_score,num_unique_main_engine_fuel_types,fleet_size,total_fuel_tonnes,total_co2e_tonnes,config_fuel_price_multiplier,config_congestion_hours,config_cii_enforcement,avg_cii,cii_rating_distribution
-Base (Idealised),4151907,93530408.34142922,3.0,8,26,70301.1124388111,192746.06416620425,1.0,0,False,,
-2024 Typical,4155437,101982697.6354882,3.0,8,26,72106.06377108171,176293.81539092594,1.05,48,True,24.564373994299903,"{'E': 21, 'A': 3, 'B': 2}"
-2024 Stress,4155437,105483500.44965662,3.0,8,26,73041.8942098817,179294.08777771873,1.1,72,True,24.976918025850036,"{'E': 21, 'B': 3, 'A': 1, 'C': 1}"
+scenario_name,total_cost_usd,total_co2e_tonnes,fleet_size,avg_safety_score

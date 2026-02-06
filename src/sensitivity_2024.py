@@ -13,10 +13,25 @@ import pandas as pd
 import numpy as np
 
 from .optimization import (
-    select_fleet_greedy,
+    select_fleet_milp,
     total_cost_and_metrics,
     validate_fleet,
 )
+
+
+def _df_for_milp(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Ensure DataFrame has columns required by select_fleet_milp: final_cost, CO2eq, FC_total.
+    Copies from total_cost_usd / co2e_tonnes / fuel_tonnes if present (legacy schema).
+    """
+    out = df.copy()
+    if "final_cost" not in out.columns and "total_cost_usd" in out.columns:
+        out["final_cost"] = out["total_cost_usd"]
+    if "CO2eq" not in out.columns and "co2e_tonnes" in out.columns:
+        out["CO2eq"] = out["co2e_tonnes"]
+    if "FC_total" not in out.columns and "fuel_tonnes" in out.columns:
+        out["FC_total"] = out["fuel_tonnes"]
+    return out
 
 
 # IMO CII calculation and rating
@@ -246,15 +261,19 @@ def run_carbon_price_sensitivity(
         df_test['risk_premium_usd'] = base_cost * risk_premium_ratio
 
         df_test['total_cost_usd'] = base_cost + df_test['risk_premium_usd']
+        df_test['final_cost'] = df_test['total_cost_usd']
+        if 'CO2eq' not in df_test.columns and 'co2e_tonnes' in df_test.columns:
+            df_test['CO2eq'] = df_test['co2e_tonnes']
+        if 'FC_total' not in df_test.columns and 'fuel_tonnes' in df_test.columns:
+            df_test['FC_total'] = df_test['fuel_tonnes']
 
-        # Select fleet
+        # Select fleet (MILP)
         try:
-            selected = select_fleet_greedy(
-                df_test,
-                cargo_demand_tonnes=cargo_demand_tonnes,
+            selected = select_fleet_milp(
+                _df_for_milp(df_test),
+                cargo_demand=cargo_demand_tonnes,
                 min_avg_safety=min_safety,
                 require_all_fuel_types=require_all_fuel_types,
-                cost_col='total_cost_usd',
             )
 
             metrics = total_cost_and_metrics(df_test, selected, cost_col='total_cost_usd')
@@ -325,14 +344,19 @@ def run_2024_scenario(
         df_scenario['total_cost_usd_pre_cii'] = df_scenario['total_cost_usd']
         df_scenario['total_cost_usd'] = df_scenario['total_cost_usd'] * df_scenario['CII_penalty_multiplier']
 
-    # Select fleet
+    df_scenario['final_cost'] = df_scenario['total_cost_usd']
+    if 'CO2eq' not in df_scenario.columns and 'co2e_tonnes' in df_scenario.columns:
+        df_scenario['CO2eq'] = df_scenario['co2e_tonnes']
+    if 'FC_total' not in df_scenario.columns and 'fuel_tonnes' in df_scenario.columns:
+        df_scenario['FC_total'] = df_scenario['fuel_tonnes']
+
+    # Select fleet (MILP)
     try:
-        selected = select_fleet_greedy(
-            df_scenario,
-            cargo_demand_tonnes=cargo_demand_tonnes,
+        selected = select_fleet_milp(
+            _df_for_milp(df_scenario),
+            cargo_demand=cargo_demand_tonnes,
             min_avg_safety=min_safety,
             require_all_fuel_types=require_all_fuel_types,
-            cost_col='total_cost_usd',
         )
 
         metrics = total_cost_and_metrics(df_scenario, selected, cost_col='total_cost_usd')
@@ -392,38 +416,49 @@ def run_comprehensive_sensitivity(
         'scenarios_2024': [],
     }
 
-    # 1. Base case
+    # 1. Base case (MILP)
+    df_milp = _df_for_milp(df)
     try:
-        selected_base = select_fleet_greedy(
-            df,
-            cargo_demand_tonnes=cargo_demand_tonnes,
+        selected_base = select_fleet_milp(
+            df_milp,
+            cargo_demand=cargo_demand_tonnes,
             min_avg_safety=base_min_safety,
             require_all_fuel_types=require_all_fuel_types,
         )
-        results['base_case'] = {
-            'metrics': total_cost_and_metrics(df, selected_base),
-            'selected_vessel_ids': selected_base,
-        }
+        if selected_base:
+            results['base_case'] = {
+                'metrics': total_cost_and_metrics(df_milp, selected_base),
+                'selected_vessel_ids': selected_base,
+            }
+        else:
+            results['base_case'] = {'error': 'Infeasible'}
     except Exception as e:
         results['base_case'] = {'error': str(e)}
 
-    # 2. Safety threshold sensitivity
+    # 2. Safety threshold sensitivity (MILP)
     safety_thresholds = [2.5, 3.0, 3.5, 4.0, 4.5]
     for threshold in safety_thresholds:
         try:
-            selected = select_fleet_greedy(
-                df,
-                cargo_demand_tonnes=cargo_demand_tonnes,
+            selected = select_fleet_milp(
+                df_milp,
+                cargo_demand=cargo_demand_tonnes,
                 min_avg_safety=threshold,
                 require_all_fuel_types=require_all_fuel_types,
             )
-            metrics = total_cost_and_metrics(df, selected)
-            results['safety_sensitivity'].append({
-                'threshold': threshold,
-                'metrics': metrics,
-                'selected_vessel_ids': selected,
-                'error': None,
-            })
+            if selected:
+                metrics = total_cost_and_metrics(df_milp, selected)
+                results['safety_sensitivity'].append({
+                    'threshold': threshold,
+                    'metrics': metrics,
+                    'selected_vessel_ids': selected,
+                    'error': None,
+                })
+            else:
+                results['safety_sensitivity'].append({
+                    'threshold': threshold,
+                    'error': 'Infeasible',
+                    'metrics': None,
+                })
         except Exception as e:
             results['safety_sensitivity'].append({
                 'threshold': threshold,
