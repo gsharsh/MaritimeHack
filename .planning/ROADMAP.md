@@ -49,7 +49,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 02-01: TDD — Build select_fleet_milp() with PuLP binary MILP (TDD plan)
+- [x] 02-01: TDD — Build select_fleet_milp() with PuLP binary MILP (TDD plan) ✓
 - [ ] 02-02: Wire MILP into run.py, fix column defaults, add CLI args (2 tasks)
 
 ### Phase 3: Validation
@@ -96,7 +96,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 (and 5 in parallel) → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
 | 1. Clean Slate & Data Foundation | 3/3 | Complete | 2026-02-06 |
-| 2. MILP Fleet Optimizer | 0/? | Not started | - |
+| 2. MILP Fleet Optimizer | 1/2 | In progress | - |
 | 3. Validation | 0/? | Not started | - |
 | 4. Safety Threshold Sweep | 0/? | Not started | - |
 | 5. Cost-Emissions Pareto Frontier | 0/? | Not started | - |
