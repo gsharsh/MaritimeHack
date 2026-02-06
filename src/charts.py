@@ -409,3 +409,124 @@ def plot_macc(
     plt.close(fig)
 
     return output_path
+
+
+def plot_carbon_sweep(
+    carbon_results: list[dict[str, Any]],
+    output_path: str = "outputs/charts/carbon_price_sweep.png",
+) -> str:
+    """
+    Plot grouped bar chart comparing fleet metrics across carbon prices.
+
+    Two subplots: top = total cost, bottom = total CO2eq emissions.
+    Infeasible carbon prices are marked with 'INFEASIBLE' text.
+
+    Parameters
+    ----------
+    carbon_results : list[dict]
+        Output from run_carbon_price_sweep(). Each dict has keys:
+        carbon_price, feasible, total_cost_usd, total_co2e_tonnes, fuel_type_counts.
+    output_path : str
+        File path for the saved PNG.
+
+    Returns
+    -------
+    str
+        The path to the saved chart file.
+    """
+    if not carbon_results:
+        print("WARNING: No carbon sweep results to plot.")
+        return output_path
+
+    labels = [f"${r['carbon_price']}/t" for r in carbon_results]
+    x = np.arange(len(labels))
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+
+    # --- Top subplot: Total fleet cost ---
+    costs = []
+    cost_colors = []
+    feasible_mask = []
+    # Color gradient: blue (low) to red (high)
+    cost_cmap = plt.cm.get_cmap("RdYlBu_r")
+
+    for r in carbon_results:
+        feasible_mask.append(r["feasible"])
+        if r["feasible"]:
+            costs.append(r["total_cost_usd"])
+        else:
+            costs.append(0)
+
+    # Normalize colors based on feasible costs
+    feasible_costs = [c for c, f in zip(costs, feasible_mask) if f and c > 0]
+    if feasible_costs:
+        c_min, c_max = min(feasible_costs), max(feasible_costs)
+        for c, f in zip(costs, feasible_mask):
+            if f and c_max > c_min:
+                norm = (c - c_min) / (c_max - c_min)
+            elif f:
+                norm = 0.5
+            else:
+                norm = 0.5
+            cost_colors.append(cost_cmap(norm))
+    else:
+        cost_colors = ["#cccccc"] * len(carbon_results)
+
+    for i, (cost, feasible, color) in enumerate(zip(costs, feasible_mask, cost_colors)):
+        if feasible:
+            ax1.bar(x[i], cost, color=color, width=0.6, edgecolor="white")
+        else:
+            ax1.text(x[i], 0, "INFEASIBLE", ha="center", va="bottom",
+                     fontsize=10, color="red", fontweight="bold", rotation=90)
+
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(labels)
+    ax1.set_ylabel("Total Fleet Cost (USD)", fontsize=11)
+    ax1.set_title("Fleet Sensitivity to Carbon Price", fontsize=14, fontweight="bold")
+    ax1.grid(True, alpha=0.3, linestyle="--", axis="y")
+
+    # --- Bottom subplot: Total CO2eq emissions ---
+    emissions = []
+    emit_colors = []
+    emit_cmap = plt.cm.get_cmap("YlOrRd")
+
+    for r in carbon_results:
+        if r["feasible"]:
+            emissions.append(r["total_co2e_tonnes"])
+        else:
+            emissions.append(0)
+
+    feasible_emissions = [e for e, f in zip(emissions, feasible_mask) if f and e > 0]
+    if feasible_emissions:
+        e_min, e_max = min(feasible_emissions), max(feasible_emissions)
+        for e, f in zip(emissions, feasible_mask):
+            if f and e_max > e_min:
+                norm = (e - e_min) / (e_max - e_min)
+            elif f:
+                norm = 0.5
+            else:
+                norm = 0.5
+            emit_colors.append(emit_cmap(norm))
+    else:
+        emit_colors = ["#cccccc"] * len(carbon_results)
+
+    for i, (emis, feasible, color) in enumerate(zip(emissions, feasible_mask, emit_colors)):
+        if feasible:
+            ax2.bar(x[i], emis, color=color, width=0.6, edgecolor="white")
+        else:
+            ax2.text(x[i], 0, "INFEASIBLE", ha="center", va="bottom",
+                     fontsize=10, color="red", fontweight="bold", rotation=90)
+
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(labels)
+    ax2.set_ylabel("Total CO2eq Emissions (tonnes)", fontsize=11)
+    ax2.set_xlabel("Carbon Price", fontsize=11)
+    ax2.grid(True, alpha=0.3, linestyle="--", axis="y")
+
+    plt.tight_layout()
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+
+    return output_path
