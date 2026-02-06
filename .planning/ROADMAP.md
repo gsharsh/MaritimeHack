@@ -56,10 +56,10 @@ Plans:
 **Goal**: Write 3-page case paper (problem/solution, sensitivity analysis, beyond-the-brief) and 6-slide presentation deck using all generated outputs
 **Depends on**: Phase 8 (needs all charts and analysis numbers)
 **Research**: Unlikely (writing deliverables from existing artifacts)
-**Plans**: TBD
+**Plans**: 1
 
 Plans:
-- [ ] 09-01: TBD
+- [x] 09-01: Case paper + presentation outline — 2026-02-06
 
 #### Phase 10: Final Validation & Submission
 
@@ -83,5 +83,5 @@ Plans:
 | 6. Submission & Charts | v1.0 | 2/2 | Complete | 2026-02-06 |
 | 7. Shadow Prices & What-If Analyses | v2.0 | 1/1 | Complete | 2026-02-06 |
 | 8. Enhanced Charts | v2.0 | 1/1 | Complete | 2026-02-06 |
-| 9. Case Paper & Slides | v2.0 | 0/? | Not started | - |
+| 9. Case Paper & Slides | v2.0 | 1/1 | Complete | 2026-02-06 |
 | 10. Final Validation & Submission | v2.0 | 0/? | Not started | - |
