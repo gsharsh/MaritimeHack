@@ -78,6 +78,105 @@ def run_safety_sweep(
     return results
 
 
+def run_safety_sweep_fixed_fleet(
+    df: pd.DataFrame,
+    selected_ids: list[int],
+    thresholds: list[float] | None = None,
+) -> list[dict[str, Any]]:
+    """
+    Evaluate a fixed fleet at each safety threshold (no re-optimisation).
+
+    Fleet size and composition stay constant. At each threshold we only check
+    whether the fleet still meets avg_safety >= threshold; cost and CO2eq are
+    unchanged (same fleet, same costs).
+    """
+    if thresholds is None:
+        thresholds = [2.5, 3.0, 3.5, 4.0, 4.5]
+    metrics = total_cost_and_metrics(df, selected_ids)
+    subset = df[df["vessel_id"].isin(selected_ids)]
+    fuel_counts = subset["main_engine_fuel_type"].value_counts().to_dict()
+    total_fuel = subset["fuel_cost"].sum() if "fuel_cost" in subset.columns else 0
+    total_carbon = subset["carbon_cost"].sum() if "carbon_cost" in subset.columns else 0
+    total_capex = subset["monthly_capex"].sum() if "monthly_capex" in subset.columns else 0
+    total_risk = subset["risk_premium"].sum() if "risk_premium" in subset.columns else 0
+    dwt_by_fuel = subset.groupby("main_engine_fuel_type")["dwt"].sum().to_dict()
+
+    results = []
+    for t in thresholds:
+        feasible = metrics["avg_safety_score"] >= t
+        results.append({
+            "threshold": t,
+            "feasible": feasible,
+            "fleet_size": metrics["fleet_size"],
+            "total_cost_usd": metrics["total_cost_usd"],
+            "avg_safety_score": metrics["avg_safety_score"],
+            "total_co2e_tonnes": metrics["total_co2e_tonnes"],
+            "total_dwt": metrics["total_dwt"],
+            "total_fuel_tonnes": metrics["total_fuel_tonnes"],
+            "fuel_type_counts": fuel_counts,
+            "selected_ids": selected_ids,
+            "total_fuel_cost": total_fuel,
+            "total_carbon_cost": total_carbon,
+            "total_capex": total_capex,
+            "total_risk_premium": total_risk,
+            "dwt_by_fuel": dwt_by_fuel,
+        })
+    return results
+
+
+def run_carbon_price_sweep_fixed_fleet(
+    df: pd.DataFrame,
+    selected_ids: list[int],
+    carbon_prices: list[float] | None = None,
+) -> list[dict[str, Any]]:
+    """
+    Evaluate a fixed fleet at each carbon price (no re-optimisation).
+
+    Fleet size and composition stay constant. Cost is recomputed at each carbon
+    price (carbon component only); CO2eq is unchanged (same fleet, same emissions).
+    """
+    if carbon_prices is None:
+        carbon_prices = [80, 120, 160, 200]
+    if "carbon_cost" in df.columns:
+        original_carbon_cost = df["carbon_cost"]
+    else:
+        original_carbon_cost = df["CO2eq"] * CARBON_PRICE
+
+    results: list[dict[str, Any]] = []
+    for cp in carbon_prices:
+        df_copy = df.copy()
+        df_copy["carbon_cost"] = df_copy["CO2eq"] * cp
+        df_copy["final_cost"] = (
+            df_copy["final_cost"] - original_carbon_cost + df_copy["carbon_cost"]
+        )
+        metrics = total_cost_and_metrics(df_copy, selected_ids)
+        subset = df_copy[df_copy["vessel_id"].isin(selected_ids)]
+        fuel_counts = subset["main_engine_fuel_type"].value_counts().to_dict()
+        total_fuel = subset["fuel_cost"].sum() if "fuel_cost" in subset.columns else 0
+        total_carbon = subset["carbon_cost"].sum() if "carbon_cost" in subset.columns else 0
+        total_capex = subset["monthly_capex"].sum() if "monthly_capex" in subset.columns else 0
+        total_risk = subset["risk_premium"].sum() if "risk_premium" in subset.columns else 0
+        dwt_by_fuel = subset.groupby("main_engine_fuel_type")["dwt"].sum().to_dict()
+
+        results.append({
+            "carbon_price": cp,
+            "feasible": True,
+            "fleet_size": len(selected_ids),
+            "total_cost_usd": metrics["total_cost_usd"],
+            "total_co2e_tonnes": metrics["total_co2e_tonnes"],
+            "avg_safety_score": metrics["avg_safety_score"],
+            "total_dwt": metrics["total_dwt"],
+            "selected_ids": selected_ids,
+            "fuel_type_counts": fuel_counts,
+            "total_fuel_cost": total_fuel,
+            "total_carbon_cost": total_carbon,
+            "total_capex": total_capex,
+            "total_risk_premium": total_risk,
+            "dwt_by_fuel": dwt_by_fuel,
+        })
+    return results
+
+
 def format_sweep_table(results: list[dict[str, Any]]) -> pd.DataFrame:
     """
     Format sweep results as a readable comparison table.

@@ -20,7 +20,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from src.data_adapter import load_per_vessel
 from src.optimization import select_fleet_milp, total_cost_and_metrics
-from src.sensitivity import run_safety_sweep, run_carbon_price_sweep
+from src.sensitivity import (
+    run_safety_sweep_fixed_fleet,
+    run_carbon_price_sweep_fixed_fleet,
+)
 from src.visualize_sensitivity import generate_all_visualizations
 
 
@@ -64,15 +67,15 @@ def run_sensitivity_using_milp(
     else:
         results["base_case"] = {"error": "Infeasible"}
 
-    # 2. Safety threshold sensitivity (MILP at each threshold)
-    if not skip_safety:
-        safety_results = run_safety_sweep(
+    # 2. Safety threshold sensitivity (fixed fleet: evaluate base fleet at each threshold)
+    if not skip_safety and selected_base:
+        safety_results = run_safety_sweep_fixed_fleet(
             df,
+            selected_ids=selected_base,
             thresholds=[2.5, 3.0, 3.5, 4.0, 4.5],
-            cargo_demand=cargo_demand,
         )
         for r in safety_results:
-            if r.get("feasible") and r.get("total_cost_usd") is not None:
+            if r.get("total_cost_usd") is not None:
                 metrics = {
                     "total_cost_usd": r["total_cost_usd"],
                     "total_co2e_tonnes": r["total_co2e_tonnes"],
@@ -88,7 +91,7 @@ def run_sensitivity_using_milp(
                 results["safety_sensitivity"].append({
                     "threshold": r["threshold"],
                     "metrics": metrics,
-                    "error": None,
+                    "error": None if r.get("feasible", True) else "Constraint not met",
                 })
             else:
                 results["safety_sensitivity"].append({
@@ -97,12 +100,11 @@ def run_sensitivity_using_milp(
                     "error": "Infeasible",
                 })
 
-    # 3. Carbon price sensitivity (MILP with adjusted final_cost)
-    if not skip_carbon:
-        carbon_results = run_carbon_price_sweep(
+    # 3. Carbon price sensitivity (fixed fleet: same fleet, cost/CO2eq at each price)
+    if not skip_carbon and selected_base:
+        carbon_results = run_carbon_price_sweep_fixed_fleet(
             df,
-            cargo_demand=cargo_demand,
-            safety_threshold=min_safety,
+            selected_ids=selected_base,
             carbon_prices=[80, 120, 160, 200],
         )
         for r in carbon_results:
@@ -144,7 +146,7 @@ def run_sensitivity_using_milp(
 def format_sensitivity_summary(results: dict) -> str:
     """Generate text summary of sensitivity results."""
     lines = ["=" * 80]
-    lines.append("COMPREHENSIVE SENSITIVITY ANALYSIS RESULTS (MILP)")
+    lines.append("COMPREHENSIVE SENSITIVITY ANALYSIS (fixed base fleet)")
     lines.append("=" * 80)
     lines.append("")
 
@@ -160,10 +162,10 @@ def format_sensitivity_summary(results: dict) -> str:
         lines.append("BASE CASE: INFEASIBLE")
         lines.append("")
 
-    lines.append("SAFETY THRESHOLD SENSITIVITY:")
+    lines.append("SAFETY THRESHOLD SENSITIVITY (fixed base fleet):")
     for r in results["safety_sensitivity"]:
         if r.get("error") or not r.get("metrics"):
-            lines.append(f"  Safety ≥ {r['threshold']}: INFEASIBLE")
+            lines.append(f"  Safety ≥ {r['threshold']}: constraint not met")
         else:
             m = r["metrics"]
             lines.append(
@@ -174,7 +176,7 @@ def format_sensitivity_summary(results: dict) -> str:
             )
     lines.append("")
 
-    lines.append("CARBON PRICE SENSITIVITY:")
+    lines.append("CARBON PRICE SENSITIVITY (fixed base fleet):")
     for r in results["carbon_price_sensitivity"]:
         if r.get("error") or not r.get("metrics"):
             lines.append(f"  ${r['carbon_price']}/tCO2eq: INFEASIBLE")
