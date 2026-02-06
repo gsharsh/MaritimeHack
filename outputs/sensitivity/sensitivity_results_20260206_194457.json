@@ -1,0 +1,205 @@
+{
+  "base_case": {
+    "metrics": {
+      "total_dwt": "11541220",
+      "total_cost_usd": 0.0,
+      "avg_safety_score": 3.8846153846153846,
+      "num_unique_main_engine_fuel_types": 8,
+      "fleet_size": 78,
+      "total_fuel_tonnes": 309550.28925495886,
+      "total_co2e_tonnes": 0.0
+    }
+  },
+  "safety_sensitivity": [
+    {
+      "threshold": 2.5,
+      "metrics": {
+        "total_dwt": "11541220",
+        "total_cost_usd": 0.0,
+        "avg_safety_score": 3.8846153846153846,
+        "num_unique_main_engine_fuel_types": 8,
+        "fleet_size": 78,
+        "total_fuel_tonnes": 309550.28925495886,
+        "total_co2e_tonnes": 0.0
+      },
+      "error": null
+    },
+    {
+      "threshold": 3.0,
+      "metrics": {
+        "total_dwt": "11541220",
+        "total_cost_usd": 0.0,
+        "avg_safety_score": 3.8846153846153846,
+        "num_unique_main_engine_fuel_types": 8,
+        "fleet_size": 78,
+        "total_fuel_tonnes": 309550.28925495886,
+        "total_co2e_tonnes": 0.0
+      },
+      "error": null
+    },
+    {
+      "threshold": 3.5,
+      "metrics": {
+        "total_dwt": "7268888",
+        "total_cost_usd": 0.0,
+        "avg_safety_score": 4.38,
+        "num_unique_main_engine_fuel_types": 8,
+        "fleet_size": 50,
+        "total_fuel_tonnes": 199005.64941947215,
+        "total_co2e_tonnes": 0.0
+      },
+      "error": null
+    },
+    {
+      "threshold": 4.0,
+      "metrics": {
+        "total_dwt": "7268888",
+        "total_cost_usd": 0.0,
+        "avg_safety_score": 4.38,
+        "num_unique_main_engine_fuel_types": 8,
+        "fleet_size": 50,
+        "total_fuel_tonnes": 199005.64941947215,
+        "total_co2e_tonnes": 0.0
+      },
+      "error": null
+    },
+    {
+      "threshold": 4.5,
+      "metrics": {
+        "total_dwt": "4236918",
+        "total_cost_usd": 0.0,
+        "avg_safety_score": 4.576923076923077,
+        "num_unique_main_engine_fuel_types": 8,
+        "fleet_size": 26,
+        "total_fuel_tonnes": 115852.79516086756,
+        "total_co2e_tonnes": 0.0
+      },
+      "error": null
+    }
+  ],
+  "carbon_price_sensitivity": [
+    {
+      "carbon_price": 80,
+      "error": null,
+      "metrics": {
+        "total_dwt": "11541220",
+        "total_cost_usd": 0.0,
+        "avg_safety_score": 3.8846153846153846,
+        "num_unique_main_engine_fuel_types": 8,
+        "fleet_size": 78,
+        "total_fuel_tonnes": 309550.28925495886,
+        "total_co2e_tonnes": 0.0,
+        "carbon_price_usd_per_tco2e": 80
+      }
+    },
+    {
+      "carbon_price": 120,
+      "error": null,
+      "metrics": {
+        "total_dwt": "11541220",
+        "total_cost_usd": 0.0,
+        "avg_safety_score": 3.8846153846153846,
+        "num_unique_main_engine_fuel_types": 8,
+        "fleet_size": 78,
+        "total_fuel_tonnes": 309550.28925495886,
+        "total_co2e_tonnes": 0.0,
+        "carbon_price_usd_per_tco2e": 120
+      }
+    },
+    {
+      "carbon_price": 160,
+      "error": null,
+      "metrics": {
+        "total_dwt": "11541220",
+        "total_cost_usd": 0.0,
+        "avg_safety_score": 3.8846153846153846,
+        "num_unique_main_engine_fuel_types": 8,
+        "fleet_size": 78,
+        "total_fuel_tonnes": 309550.28925495886,
+        "total_co2e_tonnes": 0.0,
+        "carbon_price_usd_per_tco2e": 160
+      }
+    },
+    {
+      "carbon_price": 200,
+      "error": null,
+      "metrics": {
+        "total_dwt": "11541220",
+        "total_cost_usd": 0.0,
+        "avg_safety_score": 3.8846153846153846,
+        "num_unique_main_engine_fuel_types": 8,
+        "fleet_size": 78,
+        "total_fuel_tonnes": 309550.28925495886,
+        "total_co2e_tonnes": 0.0,
+        "carbon_price_usd_per_tco2e": 200
+      }
+    }
+  ],
+  "scenarios_2024": [
+    {
+      "scenario_name": "Base (Idealised)",
+      "error": null,
+      "metrics": {
+        "total_dwt": "11541220",
+        "total_cost_usd": 0.0,
+        "avg_safety_score": 3.8846153846153846,
+        "num_unique_main_engine_fuel_types": 8,
+        "fleet_size": 78,
+        "total_fuel_tonnes": 309550.28925495886,
+        "total_co2e_tonnes": 0.0,
+        "scenario_config": {
+          "name": "Base (Idealised)",
+          "fuel_price_multiplier": 1.0,
+          "congestion_hours": 0,
+          "cii_enforcement": false
+        }
+      }
+    },
+    {
+      "scenario_name": "2024 Typical",
+      "error": null,
+      "metrics": {
+        "total_dwt": "11541220",
+        "total_cost_usd": 0.0,
+        "avg_safety_score": 3.8846153846153846,
+        "num_unique_main_engine_fuel_types": 8,
+        "fleet_size": 78,
+        "total_fuel_tonnes": 316348.66964775894,
+        "total_co2e_tonnes": 21795.607539316803,
+        "scenario_config": {
+          "name": "2024 Typical",
+          "fuel_price_multiplier": 1.05,
+          "congestion_hours": 48,
+          "cii_enforcement": true
+        },
+        "avg_cii": 1.0599070072669348,
+        "cii_rating_distribution": {
+          "A": 78
+        }
+      }
+    },
+    {
+      "scenario_name": "2024 Stress",
+      "error": null,
+      "metrics": {
+        "total_dwt": "11541220",
+        "total_cost_usd": 0.0,
+        "avg_safety_score": 3.8846153846153846,
+        "num_unique_main_engine_fuel_types": 8,
+        "fleet_size": 78,
+        "total_fuel_tonnes": 319747.8598441589,
+        "total_co2e_tonnes": 32693.411308975195,
+        "scenario_config": {
+          "name": "2024 Stress",
+          "fuel_price_multiplier": 1.1,
+          "congestion_hours": 72,
+          "cii_enforcement": true
+        },
+        "avg_cii": 1.5898605109004025,
+        "cii_rating_distribution": {
+          "A": 78
+        }
+      }
+    }
+  ]
+}

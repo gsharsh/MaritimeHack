@@ -1,15 +1,18 @@
 """
-Fleet selection optimization.
+Fleet selection optimization using Mixed Integer Linear Programming (MILP).
 Objective: minimize total cost subject to:
 - Combined fleet DWT >= cargo demand D
 - Average fleet safety score >= 3 (configurable)
 - At least one vessel of each main_engine_fuel_type
 - Each ship at most once (no repeat trips)
+
+Based on Methodology_Report.md Section 3.13 and Methodology_SOP.md Section 7.
 """
 
 from typing import Any
 
 import pandas as pd
+from pulp import LpProblem, LpMinimize, LpVariable, lpSum, LpStatus, PULP_CBC_CMD
 
 
 def validate_fleet(
@@ -61,65 +64,102 @@ def total_cost_and_metrics(
     }
 
 
-def select_fleet_greedy(
+def select_fleet_milp(
     df: pd.DataFrame,
     cargo_demand_tonnes: float,
     min_avg_safety: float = 3.0,
     require_all_fuel_types: bool = True,
     cost_col: str = "total_cost_usd",
+    solver_msg: bool = False,
 ) -> list[str | int]:
     """
-    Greedy fleet selection: sort by cost per DWT (efficiency), add ships until
-    demand is met and constraints satisfied. Then enforce one-per-fuel-type and
-    average safety.
+    MILP fleet selection as per Methodology_Report.md Section 3.13.
+
+    Formulation:
+        Decision variables: x_i ∈ {0, 1} for each vessel i
+
+        Objective: Minimize Σ(x_i × cost_i)
+
+        Subject to:
+            (C1) Σ(x_i × DWT_i) ≥ cargo_demand
+            (C2) Σ(x_i × (safety_i - min_safety)) ≥ 0  [linearized average]
+            (C3) For each fuel type: Σ(x_i : fuel_type_i = f) ≥ 1
+            (C4) x_i ∈ {0, 1}
+
+    Args:
+        df: DataFrame with vessel data
+        cargo_demand_tonnes: Minimum total DWT required
+        min_avg_safety: Minimum average fleet safety score
+        require_all_fuel_types: Require at least one vessel per fuel type
+        cost_col: Column name for vessel cost
+        solver_msg: Show solver output
+
+    Returns:
+        List of selected vessel IDs
+
+    Raises:
+        ValueError: If problem is infeasible
     """
-    df = df.copy()
-    df["cost_per_dwt"] = df[cost_col] / df["dwt"].clip(lower=1)
+    # Create MILP problem
+    prob = LpProblem("FleetSelection", LpMinimize)
 
-    selected: list[str | int] = []
-    remaining = df.sort_values("cost_per_dwt").copy()
+    # Convert to list of dicts for easier access
+    vessels = df.to_dict('records')
+    vessel_ids = [v['vessel_id'] for v in vessels]
 
-    # Ensure at least one per main_engine_fuel_type
+    # Decision variables: x[vessel_id] ∈ {0, 1}
+    x = {vid: LpVariable(f"x_{vid}", cat='Binary') for vid in vessel_ids}
+
+    # Objective: Minimize total cost
+    prob += lpSum(x[v['vessel_id']] * v[cost_col] for v in vessels), "TotalCost"
+
+    # Constraint 1: DWT demand
+    prob += (
+        lpSum(x[v['vessel_id']] * v['dwt'] for v in vessels) >= cargo_demand_tonnes,
+        "DWT_Demand"
+    )
+
+    # Constraint 2: Average safety (linearized)
+    # Average safety ≥ min_safety  →  Σ(x_i × safety_i) / Σ(x_i) ≥ min_safety
+    # Linearized: Σ(x_i × (safety_i - min_safety)) ≥ 0
+    prob += (
+        lpSum(x[v['vessel_id']] * (v['safety_score'] - min_avg_safety) for v in vessels) >= 0,
+        "Safety_Average"
+    )
+
+    # Constraint 3: At least one vessel per fuel type
     if require_all_fuel_types:
-        for ft in remaining["main_engine_fuel_type"].unique():
-            cand = remaining[remaining["main_engine_fuel_type"] == ft]
-            if cand.empty:
-                continue
-            best = cand.loc[cand[cost_col].idxmin()]
-            vid = best["vessel_id"]
-            if vid not in selected:
-                selected.append(vid)
-        remaining = remaining[~remaining["vessel_id"].isin(selected)]
+        fuel_types = df['main_engine_fuel_type'].unique()
+        for fuel_type in fuel_types:
+            ft_vessels = [v for v in vessels if v['main_engine_fuel_type'] == fuel_type]
+            prob += (
+                lpSum(x[v['vessel_id']] for v in ft_vessels) >= 1,
+                f"FuelType_{fuel_type.replace(' ', '_')}"
+            )
 
-    # Fill remaining demand with cheapest cost-per-DWT
-    current_dwt = df[df["vessel_id"].isin(selected)]["dwt"].sum()
-    remaining = remaining.sort_values("cost_per_dwt")
+    # Solve
+    solver = PULP_CBC_CMD(msg=solver_msg)
+    status = prob.solve(solver)
 
-    for _, row in remaining.iterrows():
-        if current_dwt >= cargo_demand_tonnes:
-            break
-        vid = row["vessel_id"]
-        selected.append(vid)
-        current_dwt += row["dwt"]
+    # Check solution status
+    if LpStatus[status] != 'Optimal':
+        raise ValueError(f"MILP optimization failed: {LpStatus[status]}")
 
-    # Drop worst cost ships until average safety >= min_avg_safety if needed
-    subset = df[df["vessel_id"].isin(selected)]
-    while subset["safety_score"].mean() < min_avg_safety and len(selected) > 1:
-        # Remove ship that improves avg safety most when removed (lowest safety first)
-        worst = subset.loc[subset["safety_score"].idxmin()]
-        selected.remove(worst["vessel_id"])
-        subset = df[df["vessel_id"].isin(selected)]
-        if subset["dwt"].sum() < cargo_demand_tonnes:
-            selected.append(worst["vessel_id"])
-            break
+    # Extract selected vessels
+    selected = [vid for vid in vessel_ids if x[vid].value() == 1]
 
+    # Validate solution
     ok, errs = validate_fleet(
         df, selected, cargo_demand_tonnes, min_avg_safety, require_all_fuel_types
     )
     if not ok:
-        raise ValueError("Greedy fleet invalid: " + "; ".join(errs))
+        raise ValueError("MILP solution validation failed: " + "; ".join(errs))
 
     return selected
+
+
+# Keep old function name for backward compatibility
+select_fleet_greedy = select_fleet_milp
 
 
 def format_outputs(metrics: dict[str, Any], sensitivity_done: bool = False) -> dict[str, Any]:

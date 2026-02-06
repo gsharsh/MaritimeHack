@@ -1,0 +1,23 @@
+================================================================================
+COMPREHENSIVE SENSITIVITY ANALYSIS RESULTS
+================================================================================
+
+SAFETY THRESHOLD SENSITIVITY:
+  Safety ≥ 2.5: INFEASIBLE - Greedy fleet invalid: Average safety score 2.28 < 2.5
+  Safety ≥ 3.0: INFEASIBLE - Greedy fleet invalid: Average safety score 2.28 < 3.0
+  Safety ≥ 3.5: INFEASIBLE - Greedy fleet invalid: Average safety score 2.28 < 3.5
+  Safety ≥ 4.0: INFEASIBLE - Greedy fleet invalid: Average safety score 2.28 < 4.0
+  Safety ≥ 4.5: INFEASIBLE - Greedy fleet invalid: Average safety score 2.28 < 4.5
+
+CARBON PRICE SENSITIVITY:
+  $80/tCO2eq: FAILED - Greedy fleet invalid: Average safety score 2.28 < 3.0
+  $120/tCO2eq: FAILED - Greedy fleet invalid: Average safety score 2.28 < 3.0
+  $160/tCO2eq: FAILED - Greedy fleet invalid: Average safety score 2.28 < 3.0
+  $200/tCO2eq: FAILED - Greedy fleet invalid: Average safety score 2.28 < 3.0
+
+2024 ROUTE-SPECIFIC SCENARIOS:
+  Base (Idealised): FAILED - Greedy fleet invalid: Average safety score 2.28 < 3.0
+  2024 Typical: FAILED - Greedy fleet invalid: Average safety score 2.28 < 3.0
+  2024 Stress: FAILED - Greedy fleet invalid: Average safety score 2.28 < 3.0
+
+================================================================================

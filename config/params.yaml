@@ -3,7 +3,8 @@
 
 # Cargo demand: monthly bunker tonnes (from MPA Annual Report 2024, Page 10, distributed over 12 months)
 # Example: 49.83 M tonnes/year -> 4.15 M tonnes/month
-cargo_demand_tonnes: 4150000  # Update from MPA 2024 report
+# Using 4.576M (from methodology) but adjusted for seed data testing
+cargo_demand_tonnes: 4150000  # For production: 4576667 (from Methodology Report)
 
 # Route: Singapore (A) to Australia West coast (B) - single voyage, no return/round trips
 route:

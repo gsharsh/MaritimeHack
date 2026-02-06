@@ -1,0 +1,37 @@
+================================================================================
+COMPREHENSIVE SENSITIVITY ANALYSIS RESULTS
+================================================================================
+
+BASE CASE:
+  Fleet size: 32
+  Total cost: $0
+  Avg safety: 3.16
+  Total CO2eq: 0 tonnes
+
+SAFETY THRESHOLD SENSITIVITY:
+  Safety ≥ 2.5: Fleet 32, Cost $0, CO2eq 0t
+  Safety ≥ 3.0: Fleet 32, Cost $0, CO2eq 0t
+  Safety ≥ 3.5: INFEASIBLE - Greedy fleet invalid: Average safety score 3.16 < 3.5
+  Safety ≥ 4.0: INFEASIBLE - Greedy fleet invalid: Average safety score 3.16 < 4.0
+  Safety ≥ 4.5: INFEASIBLE - Greedy fleet invalid: Average safety score 3.16 < 4.5
+
+CARBON PRICE SENSITIVITY:
+  $80/tCO2eq: Fleet 32, Cost $0, CO2eq 0t
+  $120/tCO2eq: Fleet 32, Cost $0, CO2eq 0t
+  $160/tCO2eq: Fleet 32, Cost $0, CO2eq 0t
+  $200/tCO2eq: Fleet 32, Cost $0, CO2eq 0t
+
+2024 ROUTE-SPECIFIC SCENARIOS:
+  Base (Idealised):
+    Fleet size: 32, Cost: $0
+    CO2eq: 0t, Avg safety: 3.16
+  2024 Typical:
+    Fleet size: 32, Cost: $0
+    CO2eq: 7,932t, Avg safety: 3.16
+    Avg CII: 1.1 g CO2/tonne·NM
+  2024 Stress:
+    Fleet size: 32, Cost: $0
+    CO2eq: 11,898t, Avg safety: 3.16
+    Avg CII: 1.6 g CO2/tonne·NM
+
+================================================================================

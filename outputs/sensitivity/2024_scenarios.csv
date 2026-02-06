@@ -1,0 +1,4 @@
+scenario_name,total_dwt,total_cost_usd,avg_safety_score,num_unique_main_engine_fuel_types,fleet_size,total_fuel_tonnes,total_co2e_tonnes,config_fuel_price_multiplier,config_congestion_hours,config_cii_enforcement,avg_cii,cii_rating_distribution
+Base (Idealised),11541220,0.0,3.8846153846153846,8,78,309550.28925495886,0.0,1.0,0,False,,
+2024 Typical,11541220,0.0,3.8846153846153846,8,78,316348.66964775894,21795.607539316803,1.05,48,True,1.0599070072669348,{'A': 78}
+2024 Stress,11541220,0.0,3.8846153846153846,8,78,319747.8598441589,32693.411308975195,1.1,72,True,1.5898605109004025,{'A': 78}
