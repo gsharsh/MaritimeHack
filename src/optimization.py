@@ -123,7 +123,7 @@ def select_fleet_greedy(
 
 
 def format_outputs(metrics: dict[str, Any], sensitivity_done: bool = False) -> dict[str, Any]:
-    """Format for submission CSV / report."""
+    """Format for report / console."""
     return {
         "Total DWT of selected fleet": metrics["total_dwt"],
         "Total cost of selected fleet (USD)": metrics["total_cost_usd"],
@@ -133,4 +133,27 @@ def format_outputs(metrics: dict[str, Any], sensitivity_done: bool = False) -> d
         "Size of fleet (Number of ships)": metrics["fleet_size"],
         "Total emission of CO2 equivalent (tonnes)": round(metrics["total_co2e_tonnes"], 2),
         "Total fuel consumption (tonnes)": round(metrics["total_fuel_tonnes"], 2),
+    }
+
+
+def submission_outputs(
+    metrics: dict[str, Any],
+    sensitivity_done: bool = False,
+    team_name: str = "",
+    category: str = "",
+    report_file_name: str = "",
+) -> dict[str, Any]:
+    """Official submission column values (given_data submission_template.csv). Do not alter column order."""
+    return {
+        "team_name": team_name,
+        "category": category,
+        "report_file_name": report_file_name,
+        "sum_of_fleet_deadweight": metrics["total_dwt"],
+        "total_cost_of_fleet": metrics["total_cost_usd"],
+        "average_fleet_safety_score": round(metrics["avg_safety_score"], 2),
+        "no_of_unique_main_engine_fuel_types_in_fleet": int(metrics["num_unique_main_engine_fuel_types"]),
+        "sensitivity_analysis_performance": "Yes" if sensitivity_done else "No",
+        "size_of_fleet_count": int(metrics["fleet_size"]),
+        "total_emission_CO2_eq": round(metrics["total_co2e_tonnes"], 2),
+        "total_fuel_consumption": round(metrics["total_fuel_tonnes"], 2),
     }

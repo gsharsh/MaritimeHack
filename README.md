@@ -42,14 +42,10 @@ pip install -r requirements.txt
 
 ## Data
 
-1. **Ships:** Place the ship dataset in `data/raw/` (e.g. `ships.csv`) with columns:  
-   `vessel_id`, `vessel_name`, `vessel_type`, `dwt`, `vref`, `P`, `ael`, `abl`,  
-   `main_engine_fuel_type`, `aux_engine_fuel_type`, `aux_boiler_fuel_type`,  
-   `sfc_me`, `sfc_ae`, `sfc_ab`, `safety_score`.
-
-2. **Global parameters:** Copy `data/global_params/global_params.yaml.example` to `global_params.yaml` and fill with hackathon data (emission factors, LCV, fuel price USD/GJ, carbon price, CAPEX, CRF, safety score adjustment rates).
-
-3. **Cargo demand:** Set `cargo_demand_tonnes` in `config/params.yaml` from MPA Annual Report 2024 (Page 10), distributed over 12 months.
+- **Given data** in `given_data/`: use `vessel_movements_dataset.csv` (AIS rows → one row per vessel is built automatically), `llaf_table.csv` (load vs emission factors), `calculation_factors.xlsx`, and the Calculation Methodology docx for formulas. See `docs/given_data_summary.md`.
+- **Ships:** By default the pipeline uses `given_data/vessel_movements_dataset.csv`. Alternatively place a ship-level CSV in `data/raw/ships.csv` with columns: `vessel_id`, `vessel_type`, `dwt`, `vref`, `P`, `ael`, `abl`, `main_engine_fuel_type`, `aux_engine_fuel_type`, `aux_boiler_fuel_type`, `sfc_me`, `sfc_ae`, `sfc_ab`, `safety_score`. (Given data uses `mep`→P, `boil_engine_fuel_type`→aux_boiler_fuel_type.)
+- **Global parameters:** Copy `data/global_params/global_params.yaml.example` to `global_params.yaml` and fill from `calculation_factors.xlsx` / methodology doc (emission factors, LCV, fuel price USD/GJ, carbon price, CAPEX, CRF, safety adjustment rates).
+- **Cargo demand:** Set `cargo_demand_tonnes` in `config/params.yaml` from MPA Annual Report 2024 (Page 10), distributed over 12 months.
 
 ## Run
 
@@ -68,7 +64,7 @@ Outputs: total DWT, total cost (USD), average safety score, unique fuel types, f
 
 ## Submission
 
-- Fill `outputs/submission/submission_template.csv` with your results, rename to `teamname_submission.csv`. Do not alter column order.
+- Use the official template: `given_data/submission_template.csv` (or `outputs/submission/submission_template.csv`). Fill the **Submission** column only; rename to `teamname_submission.csv`. Do not alter column order. The code can output `submission_outputs()` with the same header names.
 - Case paper: `MaritimeHackathon2026_CasePaper_teamname` (Word/PDF).
 - Presentation: `teamname_presentation.ppt` (4–6 slides, ≤10 min).
 

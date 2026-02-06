@@ -43,11 +43,12 @@ def main() -> None:
     min_safety = config["constraints"].get("min_avg_safety_score", 3.0)
     require_all_fuel = config["constraints"].get("require_all_fuel_types", True)
 
-    ships_path = args.ships or str(data_path("raw", "ships.csv"))
+    given_data_ships = root / "given_data" / "vessel_movements_dataset.csv"
+    ships_path = args.ships or (str(given_data_ships) if given_data_ships.exists() else str(data_path("raw", "ships.csv")))
     global_params_path = args.global_params or str(data_path("global_params", "global_params.yaml"))
 
     if not Path(ships_path).exists():
-        print(f"Ships file not found: {ships_path}. Add ship dataset to data/raw/.")
+        print(f"Ships file not found: {ships_path}. Use given_data/vessel_movements_dataset.csv or add data/raw/ships.csv.")
         sys.exit(1)
 
     df = load_ships(ships_path)
