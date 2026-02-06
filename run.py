@@ -30,6 +30,7 @@ from src.sensitivity import (
     run_carbon_price_sweep,
     format_carbon_sweep_table,
 )
+from src.charts import plot_pareto_frontier
 
 
 def main() -> None:
@@ -248,6 +249,12 @@ def main() -> None:
 
         feasible_count = sum(1 for r in pareto_results if r["feasible"])
         print(f"\nPareto points: {feasible_count} feasible out of {len(pareto_results)}")
+
+        # Generate Pareto frontier chart
+        chart_dir = "outputs/charts"
+        os.makedirs(chart_dir, exist_ok=True)
+        chart_path = plot_pareto_frontier(pareto_results)
+        print(f"Pareto chart saved to: {chart_path}")
 
         print("=" * 60)
 
