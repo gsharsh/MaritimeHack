@@ -34,7 +34,7 @@ from src.sensitivity import (
     run_diversity_whatif,
     compute_fleet_efficiency,
 )
-from src.charts import plot_pareto_frontier, plot_fleet_composition, plot_safety_comparison
+from src.charts import plot_pareto_frontier, plot_fleet_composition, plot_safety_comparison, plot_macc, plot_carbon_sweep
 
 
 def main() -> None:
@@ -288,6 +288,9 @@ def main() -> None:
         chart_path = plot_pareto_frontier(pareto_results)
         print(f"Pareto chart saved to: {chart_path}")
 
+        macc_path = plot_macc(pareto_results)
+        print(f"MACC chart saved to: {macc_path}")
+
         print("=" * 60)
 
     # --- Carbon price sweep --------------------------------------------------
@@ -312,6 +315,9 @@ def main() -> None:
                 print(f"  ${r['carbon_price']}/t: {len(counts)} types — {composition}")
             else:
                 print(f"  ${r['carbon_price']}/t: INFEASIBLE")
+
+        carbon_chart_path = plot_carbon_sweep(carbon_results)
+        print(f"Carbon price sweep chart saved to: {carbon_chart_path}")
 
         print("=" * 60)
 
