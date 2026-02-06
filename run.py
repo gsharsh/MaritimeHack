@@ -33,6 +33,48 @@ from src.sensitivity import (
 from src.charts import plot_pareto_frontier, plot_fleet_composition, plot_safety_comparison
 
 
+def run_fleet_selection(
+    df: pd.DataFrame,
+    cargo_demand: float,
+    safety_threshold: float,
+) -> tuple[list, dict]:
+    """
+    Run MILP fleet selection and return the chosen fleet.
+
+    Returns
+    -------
+    (selected_ids, metrics)
+        selected_ids: list of selected vessel_id.
+        metrics: dict from total_cost_and_metrics (total_dwt, total_cost_usd, etc.).
+        If infeasible, returns ([], {}).
+    """
+    selected_ids = select_fleet_milp(
+        df,
+        cargo_demand=cargo_demand,
+        min_avg_safety=safety_threshold,
+    )
+    if not selected_ids:
+        return [], {}
+    metrics = total_cost_and_metrics(df, selected_ids)
+    return selected_ids, metrics
+
+
+def save_chosen_fleet(
+    df: pd.DataFrame,
+    selected_ids: list,
+    out_dir: str | Path,
+) -> None:
+    """Save chosen fleet to outputs/results (chosen_fleet.csv, chosen_fleet_ids.csv)."""
+    out_path = Path(out_dir)
+    out_path.mkdir(parents=True, exist_ok=True)
+    chosen = df[df["vessel_id"].isin(selected_ids)]
+    chosen.to_csv(out_path / "chosen_fleet.csv", index=False)
+    pd.DataFrame({"vessel_id": selected_ids}).to_csv(
+        out_path / "chosen_fleet_ids.csv", index=False
+    )
+    print(f"Saved chosen fleet ({len(selected_ids)} vessels) to {out_path}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Smart Fleet Selection - Maritime Hackathon 2026"
@@ -159,10 +201,8 @@ def main() -> None:
     print(f"  Safety threshold: {args.safety_threshold}")
     print(f"{'=' * 60}")
 
-    selected_ids = select_fleet_milp(
-        df,
-        cargo_demand=args.cargo_demand,
-        min_avg_safety=args.safety_threshold,
+    selected_ids, metrics = run_fleet_selection(
+        df, args.cargo_demand, args.safety_threshold
     )
 
     if not selected_ids:
@@ -183,7 +223,6 @@ def main() -> None:
             print(f"  - {err}")
 
     # --- Metrics and output --------------------------------------------------
-    metrics = total_cost_and_metrics(df, selected_ids)
     formatted = format_outputs(metrics)
 
     print(f"\nFleet Selection Results:")
@@ -193,6 +232,9 @@ def main() -> None:
     print(f"\nSelected vessel IDs ({len(selected_ids)}):")
     print(f"  {selected_ids}")
     print("=" * 60)
+
+    # --- Save chosen fleet to outputs/results --------------------------------
+    save_chosen_fleet(df, selected_ids, args.out_dir)
 
     # --- Submission CSV ------------------------------------------------------
     if args.submit:

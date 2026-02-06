@@ -1,0 +1,37 @@
+================================================================================
+COMPREHENSIVE SENSITIVITY ANALYSIS RESULTS
+================================================================================
+
+BASE CASE:
+  Fleet size: 50
+  Total cost: $32,824,128
+  Avg safety: 3.12
+  Total CO2eq: 24,545 tonnes
+
+SAFETY THRESHOLD SENSITIVITY:
+  Safety ≥ 2.5: Fleet 50, Cost $32,824,128, CO2eq 24,545t
+  Safety ≥ 3.0: Fleet 50, Cost $32,824,128, CO2eq 24,545t
+  Safety ≥ 3.5: Fleet 0, Cost $0, CO2eq 0t
+  Safety ≥ 4.0: Fleet 0, Cost $0, CO2eq 0t
+  Safety ≥ 4.5: Fleet 0, Cost $0, CO2eq 0t
+
+CARBON PRICE SENSITIVITY:
+  $80/tCO2eq: Fleet 50, Cost $32,824,128, CO2eq 24,545t
+  $120/tCO2eq: Fleet 50, Cost $33,813,551, CO2eq 24,404t
+  $160/tCO2eq: Fleet 50, Cost $34,799,552, CO2eq 24,404t
+  $200/tCO2eq: Fleet 49, Cost $34,888,065, CO2eq 23,520t
+
+2024 ROUTE-SPECIFIC SCENARIOS:
+  Base (Idealised):
+    Fleet size: 50, Cost: $32,824,128
+    CO2eq: 24,545t, Avg safety: 3.12
+  2024 Typical:
+    Fleet size: 49, Cost: $32,121,255
+    CO2eq: 23,661t, Avg safety: 3.10
+    Avg CII: 4.3 g CO2/tonne·NM
+  2024 Stress:
+    Fleet size: 49, Cost: $32,377,668
+    CO2eq: 23,661t, Avg safety: 3.10
+    Avg CII: 4.3 g CO2/tonne·NM
+
+================================================================================

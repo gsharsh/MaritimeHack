@@ -49,6 +49,13 @@ def run_safety_sweep(
             metrics = total_cost_and_metrics(df, selected_ids)
             subset = df[df["vessel_id"].isin(selected_ids)]
             fuel_counts = subset["main_engine_fuel_type"].value_counts().to_dict()
+            # Cost breakdown for stacked bar (CAPEX = monthly_capex)
+            total_fuel = subset["fuel_cost"].sum() if "fuel_cost" in subset.columns else 0
+            total_carbon = subset["carbon_cost"].sum() if "carbon_cost" in subset.columns else 0
+            total_capex = subset["monthly_capex"].sum() if "monthly_capex" in subset.columns else 0
+            total_risk = subset["risk_premium"].sum() if "risk_premium" in subset.columns else 0
+            # DWT by fuel type for fuel-mix charts (used in safety context too if needed)
+            dwt_by_fuel = subset.groupby("main_engine_fuel_type")["dwt"].sum().to_dict() if "dwt" in subset.columns else {}
 
             results.append({
                 "threshold": t,
@@ -61,6 +68,11 @@ def run_safety_sweep(
                 "total_fuel_tonnes": metrics["total_fuel_tonnes"],
                 "fuel_type_counts": fuel_counts,
                 "selected_ids": selected_ids,
+                "total_fuel_cost": total_fuel,
+                "total_carbon_cost": total_carbon,
+                "total_capex": total_capex,
+                "total_risk_premium": total_risk,
+                "dwt_by_fuel": dwt_by_fuel,
             })
 
     return results
@@ -318,9 +330,10 @@ def run_carbon_price_sweep(
         else:
             original_carbon_cost = df_copy["CO2eq"] * CARBON_PRICE
 
-        # Recalculate final_cost with the new carbon price
+        # Recalculate carbon cost and final_cost with the new carbon price
+        df_copy["carbon_cost"] = df_copy["CO2eq"] * cp
         df_copy["final_cost"] = (
-            df_copy["final_cost"] - original_carbon_cost + df_copy["CO2eq"] * cp
+            df_copy["final_cost"] - original_carbon_cost + df_copy["carbon_cost"]
         )
 
         selected_ids = select_fleet_milp(
@@ -345,6 +358,11 @@ def run_carbon_price_sweep(
             metrics = total_cost_and_metrics(df_copy, selected_ids)
             subset = df_copy[df_copy["vessel_id"].isin(selected_ids)]
             fuel_counts = subset["main_engine_fuel_type"].value_counts().to_dict()
+            total_fuel = subset["fuel_cost"].sum() if "fuel_cost" in subset.columns else 0
+            total_carbon = subset["carbon_cost"].sum() if "carbon_cost" in subset.columns else 0
+            total_capex = subset["monthly_capex"].sum() if "monthly_capex" in subset.columns else 0
+            total_risk = subset["risk_premium"].sum() if "risk_premium" in subset.columns else 0
+            dwt_by_fuel = subset.groupby("main_engine_fuel_type")["dwt"].sum().to_dict() if "dwt" in subset.columns else {}
 
             results.append({
                 "carbon_price": cp,
@@ -356,6 +374,11 @@ def run_carbon_price_sweep(
                 "total_dwt": metrics["total_dwt"],
                 "selected_ids": selected_ids,
                 "fuel_type_counts": fuel_counts,
+                "total_fuel_cost": total_fuel,
+                "total_carbon_cost": total_carbon,
+                "total_capex": total_capex,
+                "total_risk_premium": total_risk,
+                "dwt_by_fuel": dwt_by_fuel,
             })
 
     return results
