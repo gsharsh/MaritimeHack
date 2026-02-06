@@ -18,6 +18,7 @@ from src.optimization import (
     total_cost_and_metrics,
     format_outputs,
 )
+from src.sensitivity import run_safety_sweep, format_sweep_table
 
 
 def main() -> None:
@@ -47,6 +48,12 @@ def main() -> None:
         type=float,
         default=SAFETY_THRESHOLD,
         help=f"Minimum average safety score (default: {SAFETY_THRESHOLD})",
+    )
+    parser.add_argument(
+        "--sweep",
+        action="store_true",
+        default=False,
+        help="Run safety threshold sweep at 3.0, 3.5, 4.0, 4.5",
     )
     args = parser.parse_args()
 
@@ -125,6 +132,29 @@ def main() -> None:
     print(f"\nSelected vessel IDs ({len(selected_ids)}):")
     print(f"  {selected_ids}")
     print("=" * 60)
+
+    # --- Safety threshold sweep ----------------------------------------------
+    if args.sweep:
+        print(f"\n{'=' * 60}")
+        print("Safety Threshold Sweep")
+        print(f"{'=' * 60}")
+
+        results = run_safety_sweep(
+            df, thresholds=[3.0, 3.5, 4.0, 4.5], cargo_demand=args.cargo_demand
+        )
+        table = format_sweep_table(results)
+        print(f"\n{table.to_string(index=False)}")
+
+        print(f"\nFuel type composition by threshold:")
+        for r in results:
+            if r["feasible"]:
+                counts = r["fuel_type_counts"]
+                composition = ", ".join(f"{ft}: {n}" for ft, n in counts.items())
+                print(f"  Threshold {r['threshold']}: {len(counts)} types — {composition}")
+            else:
+                print(f"  Threshold {r['threshold']}: INFEASIBLE")
+
+        print("=" * 60)
 
 
 if __name__ == "__main__":
