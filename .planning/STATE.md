@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-02-06)
 
 ## Current Position
 
-Phase: 7 of 10 (Shadow Prices & What-If Analyses)
+Phase: 8 of 10 (Enhanced Charts)
 Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-02-06 — Completed 07-01-PLAN.md
+Last activity: 2026-02-06 — Completed 08-01-PLAN.md
 
-Progress: ██░░░░░░░░ 25%
+Progress: ████░░░░░░ 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
+- Total plans completed: 13
 - Average duration: 3 min
-- Total execution time: 40 min
+- Total execution time: 45 min
 
 **By Phase:**
 
@@ -34,10 +34,11 @@ Progress: ██░░░░░░░░ 25%
 | 5 | 2/2 | 6 min | 3 min |
 | 6 | 2/2 | 9 min | 5 min |
 | 7 | 1/1 | 5 min | 5 min |
+| 8 | 1/1 | 5 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-02 (3 min), 06-01 (5 min), 06-02 (4 min), 07-01 (5 min)
-- Trend: consistent ~3-5 min/plan
+- Last 5 plans: 06-01 (5 min), 06-02 (4 min), 07-01 (5 min), 08-01 (5 min)
+- Trend: consistent ~4-5 min/plan
 
 ## Accumulated Context
 
@@ -70,6 +71,8 @@ Recent decisions affecting current work:
 - DWT shadow price via +1% perturbation, safety shadow price via +0.1 perturbation
 - Diversity what-if toggles require_all_fuel_types True vs False
 - --shadow-prices flag added to --all convenience group
+- MACC bars sorted cheapest-first, color thresholds: <$100 green, $100-$500 yellow, >$500 red
+- Carbon sweep chart: dual subplot (cost + emissions), infeasible shown as text
 
 ### Deferred Issues
 
