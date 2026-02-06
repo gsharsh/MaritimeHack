@@ -12,7 +12,56 @@ from typing import Any
 import pandas as pd
 from pulp import LpBinary, LpMinimize, LpProblem, LpVariable, PULP_CBC_CMD, lpSum
 
-from src.constants import MONTHLY_DEMAND, SAFETY_THRESHOLD
+from src.constants import CARBON_PRICE, MONTHLY_DEMAND, SAFETY_THRESHOLD
+
+# ---------------------------------------------------------------------------
+# Robust (min-max) scenario set
+# ---------------------------------------------------------------------------
+DEFAULT_ROBUST_SCENARIOS: dict[str, dict[str, float]] = {
+    "base": {"carbon_price": 80, "min_avg_safety": 3.0},
+    "safety_stress": {"carbon_price": 80, "min_avg_safety": 4.0},
+    "carbon_stress": {"carbon_price": 160, "min_avg_safety": 3.0},
+    "joint_stress": {"carbon_price": 160, "min_avg_safety": 4.0},
+}
+
+
+def build_scenario_cost_matrix(
+    df: pd.DataFrame,
+    scenarios: dict[str, dict[str, float]],
+) -> pd.DataFrame:
+    """
+    Build per-vessel cost under each scenario (carbon-only adjustment).
+
+    Same logic as sensitivity.run_carbon_price_sweep: for each scenario,
+    final_cost_s = final_cost - carbon_cost + CO2eq * scenario_carbon_price.
+    Returns DataFrame with index = df.index, columns = scenario names.
+    """
+    if "carbon_cost" in df.columns:
+        original_carbon = df["carbon_cost"]
+    else:
+        original_carbon = df["CO2eq"] * CARBON_PRICE
+    base_final = df["final_cost"]
+    co2eq = df["CO2eq"]
+
+    out = pd.DataFrame(index=df.index)
+    for name, params in scenarios.items():
+        cp = float(params["carbon_price"])
+        out[name] = base_final - original_carbon + co2eq * cp
+    return out
+
+
+def fleet_costs_by_scenario(
+    df: pd.DataFrame,
+    scenarios: dict[str, dict[str, float]],
+    selected_ids: list[int],
+) -> dict[str, float]:
+    """Total cost of the selected fleet under each scenario (for validation/reporting)."""
+    cost_matrix = build_scenario_cost_matrix(df, scenarios)
+    mask = df["vessel_id"].isin(selected_ids)
+    return {
+        sname: float(cost_matrix.loc[mask, sname].sum())
+        for sname in scenarios
+    }
 
 
 def validate_fleet(
@@ -124,6 +173,82 @@ def select_fleet_milp(
         [int(vessel_ids[i]) for i in indices if x[i].varValue > 0.5]
     )
     return selected
+
+
+def select_fleet_minmax_milp(
+    df_per_vessel: pd.DataFrame,
+    scenarios: dict[str, dict[str, float]],
+    cargo_demand: float,
+    require_all_fuel_types: bool = True,
+) -> tuple[list[int], float | None]:
+    """
+    Select min-max robust fleet: one fleet minimising worst-case cost across scenarios.
+
+    Decision variables: x_i in {0,1}, Z >= 0 (worst-case cost).
+    Objective: minimise Z.
+    For each scenario s: sum_i c_{i,s} x_i <= Z.
+    Same structural constraints: DWT, linearised safety (strictest threshold), fuel diversity.
+
+    Returns (selected_vessel_ids, Z_value). Empty list and None if infeasible.
+    """
+    cost_matrix = build_scenario_cost_matrix(df_per_vessel, scenarios)
+    min_avg_safety_robust = max(
+        float(s["min_avg_safety"]) for s in scenarios.values()
+    )
+
+    indices = list(df_per_vessel.index)
+    vessel_ids = df_per_vessel["vessel_id"].tolist()
+    dwts = df_per_vessel["dwt"].tolist()
+    safety_deltas = (
+        df_per_vessel["safety_score"] - min_avg_safety_robust
+    ).tolist()
+
+    prob = LpProblem("fleet_minmax_robust", LpMinimize)
+    x = LpVariable.dicts("x", indices, 0, 1, LpBinary)
+    Z_var = LpVariable("Z", 0, None)
+
+    # Objective: minimise worst-case cost
+    prob += Z_var, "minmax_cost"
+
+    # Robust cost: for each scenario s, sum_i c[i,s]*x[i] <= Z
+    for sname in scenarios:
+        costs_s = cost_matrix[sname].tolist()
+        prob += (
+            lpSum([costs_s[i] * x[i] for i in indices]) <= Z_var,
+            f"Cost_{sname}",
+        )
+
+    # DWT >= cargo demand
+    prob += (
+        lpSum([dwts[i] * x[i] for i in indices]) >= cargo_demand,
+        "DWT",
+    )
+
+    # Linearised average safety >= strictest threshold
+    prob += (
+        lpSum([safety_deltas[i] * x[i] for i in indices]) >= 0,
+        "Safety",
+    )
+
+    # Fuel diversity
+    if require_all_fuel_types:
+        fuel_types = df_per_vessel["main_engine_fuel_type"].unique()
+        for ft in fuel_types:
+            ft_indices = df_per_vessel.index[
+                df_per_vessel["main_engine_fuel_type"] == ft
+            ].tolist()
+            prob += lpSum([x[i] for i in ft_indices]) >= 1, f"Fuel_{ft}"
+
+    prob.solve(PULP_CBC_CMD(msg=0))
+
+    if prob.status != 1:
+        return [], None
+
+    selected = sorted(
+        [int(vessel_ids[i]) for i in indices if x[i].varValue > 0.5]
+    )
+    z_value = float(Z_var.varValue) if Z_var.varValue is not None else None
+    return selected, z_value
 
 
 def format_outputs(metrics: dict[str, Any], sensitivity_done: bool = False) -> dict[str, Any]:

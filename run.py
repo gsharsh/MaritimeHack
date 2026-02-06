@@ -16,7 +16,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from src.data_adapter import load_per_vessel, validate_per_vessel
 from src.constants import MONTHLY_DEMAND, SAFETY_THRESHOLD, FUEL_TYPES, CARBON_PRICE
 from src.optimization import (
+    DEFAULT_ROBUST_SCENARIOS,
+    build_scenario_cost_matrix,
+    fleet_costs_by_scenario,
     select_fleet_milp,
+    select_fleet_minmax_milp,
     validate_fleet,
     total_cost_and_metrics,
     format_outputs,
@@ -79,6 +83,22 @@ def save_chosen_fleet(
     print(f"Saved chosen fleet ({len(selected_ids)} vessels) to {out_path}")
 
 
+def save_robust_fleet(
+    df: pd.DataFrame,
+    selected_ids: list,
+    out_dir: str | Path,
+) -> None:
+    """Save robust fleet to outputs/results (robust_fleet.csv, robust_fleet_ids.csv)."""
+    out_path = Path(out_dir)
+    out_path.mkdir(parents=True, exist_ok=True)
+    chosen = df[df["vessel_id"].isin(selected_ids)]
+    chosen.to_csv(out_path / "robust_fleet.csv", index=False)
+    pd.DataFrame({"vessel_id": selected_ids}).to_csv(
+        out_path / "robust_fleet_ids.csv", index=False
+    )
+    print(f"Saved robust fleet ({len(selected_ids)} vessels) to {out_path}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Smart Fleet Selection - Maritime Hackathon 2026"
@@ -124,6 +144,12 @@ def main() -> None:
         action="store_true",
         default=False,
         help="Run carbon price sweep at $80/$120/$160/$200",
+    )
+    parser.add_argument(
+        "--robust",
+        action="store_true",
+        default=False,
+        help="Run min-max robust fleet optimisation across stress scenarios",
     )
     parser.add_argument(
         "--submit",
@@ -247,14 +273,76 @@ def main() -> None:
     # --- Save chosen fleet to outputs/results --------------------------------
     save_chosen_fleet(df, selected_ids, args.out_dir)
 
+    # --- Robust (min-max) fleet -----------------------------------------------
+    robust_ids: list[int] = []
+    robust_metrics: dict | None = None
+    if args.robust:
+        print(f"\n{'=' * 60}")
+        print("Min-Max Robust Fleet Optimisation")
+        print(f"  Scenarios: {list(DEFAULT_ROBUST_SCENARIOS.keys())}")
+        print(f"  Cargo demand: {args.cargo_demand:,.0f} tonnes")
+        print(f"{'=' * 60}")
+
+        robust_ids, z_value = select_fleet_minmax_milp(
+            df,
+            scenarios=DEFAULT_ROBUST_SCENARIOS,
+            cargo_demand=args.cargo_demand,
+            require_all_fuel_types=True,
+        )
+
+        if not robust_ids:
+            print("\nROBUST INFEASIBLE: No fleet satisfies all scenarios.")
+            sys.exit(1)
+
+        min_avg_safety_robust = max(
+            float(s["min_avg_safety"]) for s in DEFAULT_ROBUST_SCENARIOS.values()
+        )
+        ok_robust, errors_robust = validate_fleet(
+            df, robust_ids, args.cargo_demand, min_avg_safety_robust, True
+        )
+        print(f"\nRobust fleet validation: {'PASS' if ok_robust else 'FAIL'}")
+        if errors_robust:
+            for err in errors_robust:
+                print(f"  - {err}")
+
+        cost_by_scenario = fleet_costs_by_scenario(
+            df, DEFAULT_ROBUST_SCENARIOS, robust_ids
+        )
+        worst_cost = max(cost_by_scenario.values())
+        if z_value is not None and abs(worst_cost - z_value) > 1.0:
+            print(
+                f"\n  Sanity: worst-case cost {worst_cost:,.2f} vs Z={z_value:,.2f} (expected close)"
+            )
+        else:
+            print(f"\n  Worst-case cost Z = ${z_value:,.2f}")
+
+        # Base-scenario metrics for reporting and submission
+        cost_matrix = build_scenario_cost_matrix(df, DEFAULT_ROBUST_SCENARIOS)
+        df_base = df.copy()
+        df_base = df_base.assign(final_cost=cost_matrix["base"])
+        robust_metrics = total_cost_and_metrics(df_base, robust_ids)
+
+        formatted_robust = format_outputs(robust_metrics)
+        print(f"\nRobust fleet (base-scenario cost):")
+        for key, val in formatted_robust.items():
+            print(f"  {key}: {val}")
+        print(f"\nCost by scenario:")
+        for sname, cost in cost_by_scenario.items():
+            print(f"  {sname}: ${cost:,.2f}")
+        print(f"\nRobust fleet vessel IDs ({len(robust_ids)}): {robust_ids}")
+        print("=" * 60)
+
+        save_robust_fleet(df, robust_ids, args.out_dir)
+
     # --- Submission CSV ------------------------------------------------------
     if args.submit:
         print(f"\n{'=' * 60}")
         print("Submission CSV Generation")
         print(f"{'=' * 60}")
 
+        sub_metrics = robust_metrics if (args.robust and robust_metrics) else metrics
         sub_values = submission_outputs(
-            metrics,
+            sub_metrics,
             sensitivity_done=True,
             team_name=args.team_name,
             category=args.category,

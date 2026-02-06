@@ -32,23 +32,23 @@ MaritimeHack/
 │   ├── data_adapter.py          # Load/validate per_vessel.csv; aggregate df_active → per_vessel (Steps 5c–6f)
 │   ├── data_loader.py           # Stub; actual loading is data_adapter
 │   ├── cost_model.py            # Stub; cost logic is in constants.py + data_adapter.aggregate_df_active
-│   ├── optimization.py          # MILP (PuLP/CBC): select_fleet_milp, validate_fleet, total_cost_and_metrics, format_outputs, submission_outputs
-│   ├── sensitivity.py           # run_safety_sweep, run_carbon_price_sweep, run_pareto_sweep (epsilon-constraint), formatters
+│   ├── optimization.py          # MILP: select_fleet_milp, select_fleet_minmax_milp (robust), build_scenario_cost_matrix, validate_fleet, total_cost_and_metrics, format_outputs, submission_outputs
+│   ├── sensitivity.py           # run_safety_sweep, run_carbon_price_sweep; run_safety_sweep_fixed_fleet, run_carbon_price_sweep_fixed_fleet; run_pareto_sweep, formatters
 │   ├── sensitivity_2024.py      # 2024 scenarios (CII, congestion, fuel multiplier), _df_for_milp; NOT wired into run_sensitivity_analysis yet
 │   ├── visualize_sensitivity.py # All charts: load from CSVs, plot_tornado_analysis, plot_safety_pareto_frontier, plot_cost_vs_safety_threshold, plot_carbon_price_sensitivity, plot_fuel_mix_vs_carbon_price, plot_macc, plot_2024_scenario_comparison, plot_combined_summary; generate_all_visualizations()
 │   ├── charts.py                # plot_pareto_frontier, plot_fleet_composition, plot_safety_comparison (used by run.py --sweep/--pareto)
 │   ├── seed_data.py             # generate_seed_fleet(), compute_estimated_costs(), save_seed_data() → data/seed/
 │   └── utils.py                 # project_root(), data_path(), outputs_path(), voyage_hours_from_nm_and_speed
-├── run.py                       # Main CLI: load per_vessel → MILP → results; optional --sweep, --pareto, --carbon-sweep, --submit
+├── run.py                       # Main CLI: load per_vessel → MILP → results; optional --robust, --sweep, --pareto, --carbon-sweep, --submit
 ├── run_sensitivity_analysis.py  # Load config + per_vessel → run_sensitivity_using_milp (base + safety + carbon); write CSVs + JSON; call generate_all_visualizations
 ├── outputs/
-│   ├── results/                 # chosen_fleet.csv, chosen_fleet_ids.csv (from run.py)
+│   ├── results/                 # chosen_fleet.csv, chosen_fleet_ids.csv; robust_fleet.csv, robust_fleet_ids.csv (when --robust)
 │   ├── sensitivity/             # base_case.csv, safety_sensitivity.csv, carbon_price_sensitivity.csv, 2024_scenarios.csv (empty if not run), *.json, *.txt
 │   │   └── plots/               # All sensitivity charts (tornado, Pareto, cost/emissions vs safety, carbon, fuel mix, MACC, dashboard)
 │   ├── charts/                  # From run.py --sweep/--pareto: fleet_composition, safety_comparison, pareto_frontier
 │   └── submission/              # submission_template.csv filled by run.py --submit
 ├── tests/                       # test_data_adapter, test_optimization, test_milp, test_validation, test_cost_model
-├── docs/                        # problem_summary.md, given_data_summary.md, assumptions.md, constraints.md
+├── docs/                        # problem_summary.md, given_data_summary.md, assumptions.md, constraints.md, ROBUST_OPTIMIZATION_AND_SENSITIVITY.md
 ├── Methodology_Report.md        # Full case-paper methodology (AIS → cost → MILP)
 ├── Methodology_SOP.md           # Implementation guide
 ├── SENSITIVITY_ANALYSIS_README.md
