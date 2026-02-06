@@ -18,7 +18,14 @@ from src.optimization import (
     total_cost_and_metrics,
     format_outputs,
 )
-from src.sensitivity import run_safety_sweep, format_sweep_table
+from src.sensitivity import (
+    run_safety_sweep,
+    format_sweep_table,
+    run_pareto_sweep,
+    format_pareto_table,
+    run_carbon_price_sweep,
+    format_carbon_sweep_table,
+)
 
 
 def main() -> None:
@@ -54,6 +61,18 @@ def main() -> None:
         action="store_true",
         default=False,
         help="Run safety threshold sweep at 3.0, 3.5, 4.0, 4.5",
+    )
+    parser.add_argument(
+        "--pareto",
+        action="store_true",
+        default=False,
+        help="Run cost-emissions Pareto frontier (epsilon-constraint, 15 points)",
+    )
+    parser.add_argument(
+        "--carbon-sweep",
+        action="store_true",
+        default=False,
+        help="Run carbon price sweep at $80/$120/$160/$200",
     )
     args = parser.parse_args()
 
@@ -153,6 +172,46 @@ def main() -> None:
                 print(f"  Threshold {r['threshold']}: {len(counts)} types — {composition}")
             else:
                 print(f"  Threshold {r['threshold']}: INFEASIBLE")
+
+        print("=" * 60)
+
+    # --- Pareto frontier -----------------------------------------------------
+    if args.pareto:
+        print(f"\n{'=' * 60}")
+        print("Cost-Emissions Pareto Frontier")
+        print(f"{'=' * 60}")
+
+        pareto_results = run_pareto_sweep(df, cargo_demand=args.cargo_demand)
+        table = format_pareto_table(pareto_results)
+        print(f"\n{table.to_string(index=False)}")
+
+        feasible_count = sum(1 for r in pareto_results if r["feasible"])
+        print(f"\nPareto points: {feasible_count} feasible out of {len(pareto_results)}")
+
+        print("=" * 60)
+
+    # --- Carbon price sweep --------------------------------------------------
+    if args.carbon_sweep:
+        print(f"\n{'=' * 60}")
+        print("Carbon Price Sweep")
+        print(f"{'=' * 60}")
+
+        carbon_results = run_carbon_price_sweep(
+            df,
+            cargo_demand=args.cargo_demand,
+            safety_threshold=args.safety_threshold,
+        )
+        table = format_carbon_sweep_table(carbon_results)
+        print(f"\n{table.to_string(index=False)}")
+
+        print(f"\nFuel type composition by carbon price:")
+        for r in carbon_results:
+            if r["feasible"]:
+                counts = r["fuel_type_counts"]
+                composition = ", ".join(f"{ft}: {n}" for ft, n in counts.items())
+                print(f"  ${r['carbon_price']}/t: {len(counts)} types — {composition}")
+            else:
+                print(f"  ${r['carbon_price']}/t: INFEASIBLE")
 
         print("=" * 60)
 
