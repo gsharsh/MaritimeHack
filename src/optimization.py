@@ -47,9 +47,9 @@ def validate_fleet(
 def total_cost_and_metrics(
     df: pd.DataFrame,
     selected_ids: list[str | int],
-    cost_col: str = "total_cost_usd",
-    fuel_col: str = "fuel_tonnes",
-    co2e_col: str = "co2e_tonnes",
+    cost_col: str = "final_cost",
+    fuel_col: str = "FC_total",
+    co2e_col: str = "CO2eq",
 ) -> dict[str, Any]:
     """Aggregate total DWT, cost, fuel, CO2e, avg safety, unique fuel types, fleet size."""
     subset = df[df["vessel_id"].isin(selected_ids)]

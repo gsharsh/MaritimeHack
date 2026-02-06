@@ -13,9 +13,9 @@ from src.optimization import (
 @pytest.fixture
 def sample_ships():
     return pd.DataFrame([
-        {"vessel_id": 1, "dwt": 10000, "safety_score": 4, "main_engine_fuel_type": "A", "total_cost_usd": 100, "fuel_tonnes": 50, "co2e_tonnes": 160},
-        {"vessel_id": 2, "dwt": 15000, "safety_score": 3, "main_engine_fuel_type": "B", "total_cost_usd": 120, "fuel_tonnes": 60, "co2e_tonnes": 190},
-        {"vessel_id": 3, "dwt": 20000, "safety_score": 5, "main_engine_fuel_type": "C", "total_cost_usd": 90, "fuel_tonnes": 40, "co2e_tonnes": 130},
+        {"vessel_id": 1, "dwt": 10000, "safety_score": 4, "main_engine_fuel_type": "A", "final_cost": 100, "FC_total": 50, "CO2eq": 160},
+        {"vessel_id": 2, "dwt": 15000, "safety_score": 3, "main_engine_fuel_type": "B", "final_cost": 120, "FC_total": 60, "CO2eq": 190},
+        {"vessel_id": 3, "dwt": 20000, "safety_score": 5, "main_engine_fuel_type": "C", "final_cost": 90, "FC_total": 40, "CO2eq": 130},
     ])
 
 

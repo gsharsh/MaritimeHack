@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Run fleet selection: load per-vessel data, print fleet summary.
-Phase 1 staging script — MILP optimization will be added in Phase 2.
+Run fleet selection: load per-vessel data, run MILP optimizer, print results.
 """
 
 import argparse
@@ -13,6 +12,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from src.data_adapter import load_per_vessel, validate_per_vessel
 from src.constants import MONTHLY_DEMAND, SAFETY_THRESHOLD, FUEL_TYPES, CARBON_PRICE
+from src.optimization import (
+    select_fleet_milp,
+    validate_fleet,
+    total_cost_and_metrics,
+    format_outputs,
+)
 
 
 def main() -> None:
@@ -30,6 +35,18 @@ def main() -> None:
         type=str,
         default="outputs/results",
         help="Output directory",
+    )
+    parser.add_argument(
+        "--cargo-demand",
+        type=float,
+        default=MONTHLY_DEMAND,
+        help=f"Cargo demand in tonnes (default: {MONTHLY_DEMAND:,})",
+    )
+    parser.add_argument(
+        "--safety-threshold",
+        type=float,
+        default=SAFETY_THRESHOLD,
+        help=f"Minimum average safety score (default: {SAFETY_THRESHOLD})",
     )
     args = parser.parse_args()
 
@@ -67,8 +84,46 @@ def main() -> None:
     print(f"  CARBON_PRICE = ${CARBON_PRICE}/tCO2e")
     print(f"  FUEL_TYPES = {len(FUEL_TYPES)} types")
 
-    # --- Ready for Phase 2 ---------------------------------------------------
-    print(f"\nReady for Phase 2: MILP optimization")
+    # --- MILP optimization ---------------------------------------------------
+    print(f"\n{'=' * 60}")
+    print(f"MILP Fleet Optimization")
+    print(f"  Cargo demand: {args.cargo_demand:,.0f} tonnes")
+    print(f"  Safety threshold: {args.safety_threshold}")
+    print(f"{'=' * 60}")
+
+    selected_ids = select_fleet_milp(
+        df,
+        cargo_demand=args.cargo_demand,
+        min_avg_safety=args.safety_threshold,
+    )
+
+    if not selected_ids:
+        print("\nINFEASIBLE: No fleet satisfies all constraints.")
+        print(f"  Total available DWT: {df['dwt'].sum():,.0f}")
+        print(f"  Required DWT: {args.cargo_demand:,.0f}")
+        if df["dwt"].sum() < args.cargo_demand:
+            print("  (Not enough total DWT in vessel pool)")
+        sys.exit(1)
+
+    # --- Validate fleet ------------------------------------------------------
+    ok, errors = validate_fleet(
+        df, selected_ids, args.cargo_demand, args.safety_threshold, True
+    )
+    print(f"\nFleet validation: {'PASS' if ok else 'FAIL'}")
+    if errors:
+        for err in errors:
+            print(f"  - {err}")
+
+    # --- Metrics and output --------------------------------------------------
+    metrics = total_cost_and_metrics(df, selected_ids)
+    formatted = format_outputs(metrics)
+
+    print(f"\nFleet Selection Results:")
+    for key, val in formatted.items():
+        print(f"  {key}: {val}")
+
+    print(f"\nSelected vessel IDs ({len(selected_ids)}):")
+    print(f"  {selected_ids}")
     print("=" * 60)
 
 
