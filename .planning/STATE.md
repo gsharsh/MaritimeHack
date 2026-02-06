@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Produce a correct, optimal fleet selection via MILP that minimizes total cost while satisfying all constraints — this is the submission answer.
-**Current focus:** ALL PHASES COMPLETE — Ready for production data and submission
+**Current focus:** v1.0 SHIPPED — Awaiting per_vessel.csv for production run
 
 ## Current Position
 
@@ -78,6 +78,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-06T13:11:31Z
-Stopped at: Completed 06-02-PLAN.md — All phases complete
+Last session: 2026-02-06T13:15:00Z
+Stopped at: v1.0 milestone archived — all 6 phases, 11 plans complete
 Resume file: None
