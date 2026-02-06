@@ -52,7 +52,13 @@ def load_sensitivity_results(results_dir: str = 'outputs/sensitivity') -> dict[s
     return data
 
 
-def plot_safety_pareto_frontier(df_safety: pd.DataFrame, output_path: Path) -> None:
+def _suffix_path(output_path: Path, base_name: str, suffix: str = "") -> Path:
+    """Return output_path / (base_name + suffix + .png)."""
+    name = base_name.replace(".png", "") + suffix + ".png"
+    return output_path / name
+
+
+def plot_safety_pareto_frontier(df_safety: pd.DataFrame, output_path: Path, suffix: str = "") -> None:
     """
     Plot cost vs safety Pareto frontier.
 
@@ -98,12 +104,13 @@ def plot_safety_pareto_frontier(df_safety: pd.DataFrame, output_path: Path) -> N
     ax2.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig(output_path / 'safety_pareto_frontier.png', dpi=300, bbox_inches='tight')
+    out = _suffix_path(output_path, 'safety_pareto_frontier.png', suffix)
+    plt.savefig(out, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Saved: {output_path / 'safety_pareto_frontier.png'}")
+    print(f"Saved: {out}")
 
 
-def plot_carbon_price_sensitivity(df_carbon: pd.DataFrame, output_path: Path) -> None:
+def plot_carbon_price_sensitivity(df_carbon: pd.DataFrame, output_path: Path, suffix: str = "") -> None:
     """
     Plot carbon price sensitivity curves.
 
@@ -155,15 +162,16 @@ def plot_carbon_price_sensitivity(df_carbon: pd.DataFrame, output_path: Path) ->
                 verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
 
     plt.tight_layout()
-    plt.savefig(output_path / 'carbon_price_sensitivity.png', dpi=300, bbox_inches='tight')
+    out = _suffix_path(output_path, 'carbon_price_sensitivity.png', suffix)
+    plt.savefig(out, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Saved: {output_path / 'carbon_price_sensitivity.png'}")
+    print(f"Saved: {out}")
 
 
 # --- Mandatory methodology charts (1–5) ---------------------------------------
 
 
-def plot_cost_vs_safety_threshold(df_safety: pd.DataFrame, output_path: Path) -> None:
+def plot_cost_vs_safety_threshold(df_safety: pd.DataFrame, output_path: Path, suffix: str = "") -> None:
     """
     Line chart: Total Fleet Cost vs Safety Threshold.
     Optional second line: Fleet size (or total DWT).
@@ -187,12 +195,13 @@ def plot_cost_vs_safety_threshold(df_safety: pd.DataFrame, output_path: Path) ->
     ax2.set_ylabel('Fleet size (number of vessels)', fontsize=12, fontweight='bold')
     ax2.legend(loc='upper right')
     plt.tight_layout()
-    plt.savefig(output_path / 'cost_vs_safety_threshold.png', dpi=300, bbox_inches='tight')
+    out = _suffix_path(output_path, 'cost_vs_safety_threshold.png', suffix)
+    plt.savefig(out, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Saved: {output_path / 'cost_vs_safety_threshold.png'}")
+    print(f"Saved: {out}")
 
 
-def plot_cost_breakdown_vs_safety(df_safety: pd.DataFrame, output_path: Path) -> None:
+def plot_cost_breakdown_vs_safety(df_safety: pd.DataFrame, output_path: Path, suffix: str = "") -> None:
     """
     Stacked bar: Cost breakdown (CAPEX, Fuel, Carbon, Risk premium) vs safety threshold.
     """
@@ -220,12 +229,13 @@ def plot_cost_breakdown_vs_safety(df_safety: pd.DataFrame, output_path: Path) ->
     ax.legend(loc='upper right')
     ax.grid(axis='y', alpha=0.3)
     plt.tight_layout()
-    plt.savefig(output_path / 'cost_breakdown_vs_safety.png', dpi=300, bbox_inches='tight')
+    out = _suffix_path(output_path, 'cost_breakdown_vs_safety.png', suffix)
+    plt.savefig(out, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Saved: {output_path / 'cost_breakdown_vs_safety.png'}")
+    print(f"Saved: {out}")
 
 
-def plot_emissions_vs_safety_threshold(df_safety: pd.DataFrame, output_path: Path) -> None:
+def plot_emissions_vs_safety_threshold(df_safety: pd.DataFrame, output_path: Path, suffix: str = "") -> None:
     """
     Line chart: Fleet emissions (total CO₂eq) vs safety threshold.
     """
@@ -241,12 +251,13 @@ def plot_emissions_vs_safety_threshold(df_safety: pd.DataFrame, output_path: Pat
     ax.set_title('Fleet Emissions vs Safety Threshold', fontsize=14, fontweight='bold')
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
-    plt.savefig(output_path / 'emissions_vs_safety_threshold.png', dpi=300, bbox_inches='tight')
+    out = _suffix_path(output_path, 'emissions_vs_safety_threshold.png', suffix)
+    plt.savefig(out, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Saved: {output_path / 'emissions_vs_safety_threshold.png'}")
+    print(f"Saved: {out}")
 
 
-def plot_fuel_mix_vs_carbon_price(df_carbon: pd.DataFrame, output_path: Path) -> None:
+def plot_fuel_mix_vs_carbon_price(df_carbon: pd.DataFrame, output_path: Path, suffix: str = "") -> None:
     """
     Stacked bar: Share of fleet by total DWT by fuel type vs carbon price.
     x: Carbon price ($80, $120, $160, $200); y: share of DWT (stacks = fuel types).
@@ -281,12 +292,13 @@ def plot_fuel_mix_vs_carbon_price(df_carbon: pd.DataFrame, output_path: Path) ->
     ax.set_ylim(0, 1)
     ax.grid(axis='y', alpha=0.3)
     plt.tight_layout()
-    plt.savefig(output_path / 'fuel_mix_vs_carbon_price.png', dpi=300, bbox_inches='tight')
+    out = _suffix_path(output_path, 'fuel_mix_vs_carbon_price.png', suffix)
+    plt.savefig(out, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Saved: {output_path / 'fuel_mix_vs_carbon_price.png'}")
+    print(f"Saved: {out}")
 
 
-def plot_macc(data: dict[str, pd.DataFrame], output_path: Path) -> None:
+def plot_macc(data: dict[str, pd.DataFrame], output_path: Path, suffix: str = "") -> None:
     """
     MACC: Marginal Abatement Cost Curve (formal definition).
     Baseline: min avg safety ≥ 3.0, carbon price = USD 80/tCO₂eq.
@@ -349,9 +361,10 @@ def plot_macc(data: dict[str, pd.DataFrame], output_path: Path) -> None:
         ax.legend()
         ax.grid(axis='y', alpha=0.3)
         plt.tight_layout()
-        plt.savefig(output_path / 'macc.png', dpi=300, bbox_inches='tight')
+        out = _suffix_path(output_path, 'macc.png', suffix)
+        plt.savefig(out, dpi=300, bbox_inches='tight')
         plt.close()
-        print(f"Saved: {output_path / 'macc.png'} (fallback bar chart)")
+        print(f"Saved: {out} (fallback bar chart)")
         return
 
     # Proper MACC: x = cumulative abatement (tonnes), y = MAC ($/t). Contiguous bars.
@@ -369,12 +382,13 @@ def plot_macc(data: dict[str, pd.DataFrame], output_path: Path) -> None:
     ax.grid(axis='y', alpha=0.3)
     ax.set_ylim(bottom=0)
     plt.tight_layout()
-    plt.savefig(output_path / 'macc.png', dpi=300, bbox_inches='tight')
+    out = _suffix_path(output_path, 'macc.png', suffix)
+    plt.savefig(out, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Saved: {output_path / 'macc.png'}")
+    print(f"Saved: {out}")
 
 
-def plot_2024_scenario_comparison(df_scenarios: pd.DataFrame, output_path: Path) -> None:
+def plot_2024_scenario_comparison(df_scenarios: pd.DataFrame, output_path: Path, suffix: str = "") -> None:
     """
     Compare 2024 route-specific scenarios.
 
@@ -454,9 +468,10 @@ def plot_2024_scenario_comparison(df_scenarios: pd.DataFrame, output_path: Path)
         ax.axis('off')
 
     plt.tight_layout()
-    plt.savefig(output_path / '2024_scenario_comparison.png', dpi=300, bbox_inches='tight')
+    out = _suffix_path(output_path, '2024_scenario_comparison.png', suffix)
+    plt.savefig(out, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Saved: {output_path / '2024_scenario_comparison.png'}")
+    print(f"Saved: {out}")
 
 
 def _build_tornado_cases(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
@@ -501,7 +516,7 @@ def _build_tornado_cases(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def plot_tornado_analysis(data: dict[str, pd.DataFrame], output_path: Path) -> None:
+def plot_tornado_analysis(data: dict[str, pd.DataFrame], output_path: Path, suffix: str = "") -> None:
     """
     Tornado analysis: one horizontal bar per sensitivity case, sorted by impact.
 
@@ -547,12 +562,13 @@ def plot_tornado_analysis(data: dict[str, pd.DataFrame], output_path: Path) -> N
         fontsize=11, fontweight='normal', y=1.02,
     )
     plt.tight_layout()
-    plt.savefig(output_path / 'tornado_analysis.png', dpi=300, bbox_inches='tight')
+    out = _suffix_path(output_path, 'tornado_analysis.png', suffix)
+    plt.savefig(out, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Saved: {output_path / 'tornado_analysis.png'}")
+    print(f"Saved: {out}")
 
 
-def plot_combined_summary(data: dict[str, pd.DataFrame], output_path: Path) -> None:
+def plot_combined_summary(data: dict[str, pd.DataFrame], output_path: Path, suffix: str = "") -> None:
     """
     Create single-page summary dashboard with all key insights.
     """
@@ -605,19 +621,22 @@ def plot_combined_summary(data: dict[str, pd.DataFrame], output_path: Path) -> N
     fig.text(0.99, 0.01, 'Generated by Maritime Optimization System',
             ha='right', va='bottom', fontsize=8, alpha=0.5)
 
-    plt.savefig(output_path / 'summary_dashboard.png', dpi=300, bbox_inches='tight')
+    out = _suffix_path(output_path, 'summary_dashboard.png', suffix)
+    plt.savefig(out, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Saved: {output_path / 'summary_dashboard.png'}")
+    print(f"Saved: {out}")
 
 
 def generate_all_visualizations(results_dir: str = 'outputs/sensitivity',
-                                output_dir: Optional[str] = None) -> None:
+                                output_dir: Optional[str] = None,
+                                suffix: str = "") -> None:
     """
     Generate all visualization types.
 
     Args:
         results_dir: Directory containing CSV results
         output_dir: Directory to save plots (defaults to results_dir/plots)
+        suffix: Optional suffix for plot filenames (e.g. _milp or _minmax)
     """
     if output_dir is None:
         output_dir = f"{results_dir}/plots"
@@ -631,28 +650,28 @@ def generate_all_visualizations(results_dir: str = 'outputs/sensitivity',
     print("\nGenerating visualizations...")
 
     # 1. Tornado analysis (replaces sensitivity matrix)
-    plot_tornado_analysis(data, output_path)
+    plot_tornado_analysis(data, output_path, suffix)
 
     # 2. Safety Pareto frontier
     if not data['safety'].empty:
-        plot_safety_pareto_frontier(data['safety'], output_path)
+        plot_safety_pareto_frontier(data['safety'], output_path, suffix)
 
     # 3. Mandatory methodology charts (1–5)
     if not data['safety'].empty:
-        plot_cost_vs_safety_threshold(data['safety'], output_path)
-        plot_cost_breakdown_vs_safety(data['safety'], output_path)
-        plot_emissions_vs_safety_threshold(data['safety'], output_path)
+        plot_cost_vs_safety_threshold(data['safety'], output_path, suffix)
+        plot_cost_breakdown_vs_safety(data['safety'], output_path, suffix)
+        plot_emissions_vs_safety_threshold(data['safety'], output_path, suffix)
     if not data['carbon'].empty:
-        plot_carbon_price_sensitivity(data['carbon'], output_path)
-        plot_fuel_mix_vs_carbon_price(data['carbon'], output_path)
-    plot_macc(data, output_path)
+        plot_carbon_price_sensitivity(data['carbon'], output_path, suffix)
+        plot_fuel_mix_vs_carbon_price(data['carbon'], output_path, suffix)
+    plot_macc(data, output_path, suffix)
 
     # 4. 2024 scenarios
     if not data['scenarios_2024'].empty:
-        plot_2024_scenario_comparison(data['scenarios_2024'], output_path)
+        plot_2024_scenario_comparison(data['scenarios_2024'], output_path, suffix)
 
     # 5. Summary dashboard
-    plot_combined_summary(data, output_path)
+    plot_combined_summary(data, output_path, suffix)
 
     print(f"\nAll visualizations saved to {output_path}")
 

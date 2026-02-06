@@ -19,7 +19,13 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from src.data_adapter import load_per_vessel
-from src.optimization import select_fleet_milp, total_cost_and_metrics
+from src.optimization import (
+    DEFAULT_ROBUST_SCENARIOS,
+    build_scenario_cost_matrix,
+    select_fleet_milp,
+    select_fleet_minmax_milp,
+    total_cost_and_metrics,
+)
 from src.sensitivity import (
     run_safety_sweep_fixed_fleet,
     run_carbon_price_sweep_fixed_fleet,
@@ -39,12 +45,14 @@ def run_sensitivity_using_milp(
     min_safety: float,
     skip_safety: bool = False,
     skip_carbon: bool = False,
+    use_minmax: bool = False,
 ) -> dict:
     """
-    Run sensitivity analysis using MILP (same as run.py).
+    Run sensitivity analysis using MILP (same as run.py) or min-max robust fleet.
 
+    If use_minmax=True, base fleet is from select_fleet_minmax_milp; sensitivity
+    evaluates that fixed fleet at different safety/carbon assumptions.
     Returns dict: base_case, safety_sensitivity, carbon_price_sensitivity, scenarios_2024.
-    scenarios_2024 is left empty so visualizer skips that chart; can be extended later.
     """
     results = {
         "base_case": None,
@@ -53,19 +61,39 @@ def run_sensitivity_using_milp(
         "scenarios_2024": [],
     }
 
-    # 1. Base case
-    selected_base = select_fleet_milp(
-        df,
-        cargo_demand=cargo_demand,
-        min_avg_safety=min_safety,
-    )
-    if selected_base:
-        results["base_case"] = {
-            "metrics": total_cost_and_metrics(df, selected_base),
-            "selected_vessel_ids": selected_base,
-        }
+    # 1. Base case: standard MILP or min-max robust
+    if use_minmax:
+        selected_base, z_value = select_fleet_minmax_milp(
+            df,
+            scenarios=DEFAULT_ROBUST_SCENARIOS,
+            cargo_demand=cargo_demand,
+            require_all_fuel_types=True,
+        )
+        if selected_base:
+            # Report metrics in base scenario (cost matrix "base")
+            cost_matrix = build_scenario_cost_matrix(df, DEFAULT_ROBUST_SCENARIOS)
+            df_base = df.copy()
+            df_base = df_base.assign(final_cost=cost_matrix["base"])
+            results["base_case"] = {
+                "metrics": total_cost_and_metrics(df_base, selected_base),
+                "selected_vessel_ids": selected_base,
+                "minmax_z": z_value,
+            }
+        else:
+            results["base_case"] = {"error": "Infeasible"}
     else:
-        results["base_case"] = {"error": "Infeasible"}
+        selected_base = select_fleet_milp(
+            df,
+            cargo_demand=cargo_demand,
+            min_avg_safety=min_safety,
+        )
+        if selected_base:
+            results["base_case"] = {
+                "metrics": total_cost_and_metrics(df, selected_base),
+                "selected_vessel_ids": selected_base,
+            }
+        else:
+            results["base_case"] = {"error": "Infeasible"}
 
     # 2. Safety threshold sensitivity (fixed fleet: evaluate base fleet at each threshold)
     if not skip_safety and selected_base:
@@ -272,11 +300,25 @@ def main() -> None:
     )
     parser.add_argument("--skip-safety", action="store_true", help="Skip safety sweep")
     parser.add_argument("--skip-carbon", action="store_true", help="Skip carbon price sweep")
+    parser.add_argument(
+        "--use-minmax",
+        action="store_true",
+        help="Use min-max robust fleet as base (sensitivity on fixed robust fleet)",
+    )
+    parser.add_argument(
+        "--suffix",
+        type=str,
+        default="",
+        help="Suffix for plot filenames (e.g. _milp or _minmax)",
+    )
     args = parser.parse_args()
 
     root = Path(__file__).resolve().parent
     print("=" * 80)
-    print("SENSITIVITY ANALYSIS (MILP) - Maritime Hackathon 2026")
+    print(
+        "SENSITIVITY ANALYSIS (MIN-MAX ROBUST)" if args.use_minmax
+        else "SENSITIVITY ANALYSIS (MILP) - Maritime Hackathon 2026"
+    )
     print("=" * 80)
     print()
 
@@ -302,6 +344,7 @@ def main() -> None:
             min_safety=min_safety,
             skip_safety=args.skip_safety,
             skip_carbon=args.skip_carbon,
+            use_minmax=args.use_minmax,
         )
 
         summary = format_sensitivity_summary(results)
@@ -321,6 +364,7 @@ def main() -> None:
         generate_all_visualizations(
             results_dir=str(output_dir),
             output_dir=str(output_dir / "plots"),
+            suffix=args.suffix,
         )
 
         json_file = output_dir / f"sensitivity_results_{timestamp}.json"

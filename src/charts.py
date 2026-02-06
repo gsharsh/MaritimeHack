@@ -450,7 +450,14 @@ def plot_macc(
     plt.close(fig1)
 
     # --- Chart 2: Log scale, full range (appendix) ---
-    log_path = output_path.replace("macc.png", "macc_full_range.png")
+    _dir = os.path.dirname(output_path)
+    _base = os.path.basename(output_path)
+    if "." in _base:
+        _name, _ext = _base.rsplit(".", 1)
+        _log_name = _name.replace("macc", "macc_full_range", 1) + "." + _ext
+    else:
+        _log_name = "macc_full_range.png"
+    log_path = os.path.join(_dir, _log_name)
     fig2, ax2 = plt.subplots(figsize=(10, 5.5))
     _draw_macc(ax2, yscale="log")
     ax2.set_title("Marginal Abatement Cost Curve — Full Range (Log Scale)", fontsize=13, fontweight="bold")

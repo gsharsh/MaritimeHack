@@ -1,0 +1,22 @@
+================================================================================
+COMPREHENSIVE SENSITIVITY ANALYSIS (fixed base fleet)
+================================================================================
+
+BASE CASE:
+  Fleet size: 21
+  Total cost: $19,706,494
+  Avg safety: 3.24
+  Total CO2eq: 13,095 tonnes
+
+SAFETY THRESHOLD SENSITIVITY (fixed base fleet):
+  Safety >= 2.5: Fleet 21, Cost $19,706,494, CO2eq 13,095t
+  Safety >= 3.0: Fleet 21, Cost $19,706,494, CO2eq 13,095t
+  Safety ≥ 3.5: constraint not met
+  Safety ≥ 4.0: constraint not met
+  Safety ≥ 4.5: constraint not met
+
+CARBON PRICE SENSITIVITY (fixed base fleet):
+  $80/tCO2eq: Fleet 21, Cost $19,706,494, CO2eq 13,095t
+  $120/tCO2eq: Fleet 21, Cost $20,230,305, CO2eq 13,095t
+  $160/tCO2eq: Fleet 21, Cost $20,754,116, CO2eq 13,095t
+  $200/tCO2eq: Fleet 21, Cost $21,277,927, CO2eq 13,095t

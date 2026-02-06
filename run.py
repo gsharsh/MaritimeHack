@@ -187,6 +187,18 @@ def main() -> None:
         default=False,
         help="Run everything: --sweep --pareto --carbon-sweep --submit --shadow-prices",
     )
+    parser.add_argument(
+        "--chart-dir",
+        type=str,
+        default="outputs/charts",
+        help="Directory for saving charts (default: outputs/charts)",
+    )
+    parser.add_argument(
+        "--chart-suffix",
+        type=str,
+        default="",
+        help="Suffix for chart filenames (e.g. _milp or _minmax)",
+    )
     args = parser.parse_args()
 
     # --all convenience flag enables all analysis modes
@@ -390,11 +402,18 @@ def main() -> None:
                 print(f"  Threshold {r['threshold']}: INFEASIBLE")
 
         # Generate fleet composition chart
-        chart_path = plot_fleet_composition(results)
+        os.makedirs(args.chart_dir, exist_ok=True)
+        chart_path = plot_fleet_composition(
+            results,
+            os.path.join(args.chart_dir, f"fleet_composition{args.chart_suffix}.png"),
+        )
         print(f"\nFleet composition chart saved to: {chart_path}")
 
         # Generate safety comparison table chart
-        comp_path = plot_safety_comparison(results)
+        comp_path = plot_safety_comparison(
+            results,
+            os.path.join(args.chart_dir, f"safety_comparison{args.chart_suffix}.png"),
+        )
         print(f"Safety comparison chart saved to: {comp_path}")
 
         print("=" * 60)
@@ -413,12 +432,17 @@ def main() -> None:
         print(f"\nPareto points: {feasible_count} feasible out of {len(pareto_results)}")
 
         # Generate Pareto frontier chart
-        chart_dir = "outputs/charts"
-        os.makedirs(chart_dir, exist_ok=True)
-        chart_path = plot_pareto_frontier(pareto_results)
+        os.makedirs(args.chart_dir, exist_ok=True)
+        chart_path = plot_pareto_frontier(
+            pareto_results,
+            os.path.join(args.chart_dir, f"pareto_frontier{args.chart_suffix}.png"),
+        )
         print(f"Pareto chart saved to: {chart_path}")
 
-        macc_path, macc_log_path = plot_macc(pareto_results)
+        macc_path, macc_log_path = plot_macc(
+            pareto_results,
+            os.path.join(args.chart_dir, f"macc{args.chart_suffix}.png"),
+        )
         print(f"MACC chart saved to: {macc_path}")
         print(f"MACC full-range chart saved to: {macc_log_path}")
 
@@ -447,7 +471,11 @@ def main() -> None:
             else:
                 print(f"  ${r['carbon_price']}/t: INFEASIBLE")
 
-        carbon_chart_path = plot_carbon_sweep(carbon_results)
+        os.makedirs(args.chart_dir, exist_ok=True)
+        carbon_chart_path = plot_carbon_sweep(
+            carbon_results,
+            os.path.join(args.chart_dir, f"carbon_price_sweep{args.chart_suffix}.png"),
+        )
         print(f"Carbon price sweep chart saved to: {carbon_chart_path}")
 
         print("=" * 60)

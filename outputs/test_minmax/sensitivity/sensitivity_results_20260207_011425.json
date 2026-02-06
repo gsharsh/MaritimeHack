@@ -1,0 +1,195 @@
+{
+  "base_case": {
+    "metrics": {
+      "total_dwt": "4580084",
+      "total_cost_usd": 20765142.645192135,
+      "avg_safety_score": 4.0,
+      "num_unique_main_engine_fuel_types": 8,
+      "fleet_size": 22,
+      "total_fuel_tonnes": 4629.781880915527,
+      "total_co2e_tonnes": 11755.80055165016
+    },
+    "minmax_z": 21705607.0
+  },
+  "safety_sensitivity": [
+    {
+      "threshold": 2.5,
+      "metrics": {
+        "total_cost_usd": 20765142.645192135,
+        "total_co2e_tonnes": 11755.80055165016,
+        "fleet_size": 22,
+        "avg_safety_score": 4.0,
+        "total_dwt": "4580084",
+        "total_fuel_tonnes": 4629.781880915527,
+        "total_fuel_cost": 3459759.154229217,
+        "total_carbon_cost": 940464.0441320129,
+        "total_capex": 16821545.9825,
+        "total_risk_premium": -456626.5356690989
+      },
+      "error": null
+    },
+    {
+      "threshold": 3.0,
+      "metrics": {
+        "total_cost_usd": 20765142.645192135,
+        "total_co2e_tonnes": 11755.80055165016,
+        "fleet_size": 22,
+        "avg_safety_score": 4.0,
+        "total_dwt": "4580084",
+        "total_fuel_tonnes": 4629.781880915527,
+        "total_fuel_cost": 3459759.154229217,
+        "total_carbon_cost": 940464.0441320129,
+        "total_capex": 16821545.9825,
+        "total_risk_premium": -456626.5356690989
+      },
+      "error": null
+    },
+    {
+      "threshold": 3.5,
+      "metrics": {
+        "total_cost_usd": 20765142.645192135,
+        "total_co2e_tonnes": 11755.80055165016,
+        "fleet_size": 22,
+        "avg_safety_score": 4.0,
+        "total_dwt": "4580084",
+        "total_fuel_tonnes": 4629.781880915527,
+        "total_fuel_cost": 3459759.154229217,
+        "total_carbon_cost": 940464.0441320129,
+        "total_capex": 16821545.9825,
+        "total_risk_premium": -456626.5356690989
+      },
+      "error": null
+    },
+    {
+      "threshold": 4.0,
+      "metrics": {
+        "total_cost_usd": 20765142.645192135,
+        "total_co2e_tonnes": 11755.80055165016,
+        "fleet_size": 22,
+        "avg_safety_score": 4.0,
+        "total_dwt": "4580084",
+        "total_fuel_tonnes": 4629.781880915527,
+        "total_fuel_cost": 3459759.154229217,
+        "total_carbon_cost": 940464.0441320129,
+        "total_capex": 16821545.9825,
+        "total_risk_premium": -456626.5356690989
+      },
+      "error": null
+    },
+    {
+      "threshold": 4.5,
+      "metrics": {
+        "total_cost_usd": 20765142.645192135,
+        "total_co2e_tonnes": 11755.80055165016,
+        "fleet_size": 22,
+        "avg_safety_score": 4.0,
+        "total_dwt": "4580084",
+        "total_fuel_tonnes": 4629.781880915527,
+        "total_fuel_cost": 3459759.154229217,
+        "total_carbon_cost": 940464.0441320129,
+        "total_capex": 16821545.9825,
+        "total_risk_premium": -456626.5356690989
+      },
+      "error": "Constraint not met"
+    }
+  ],
+  "carbon_price_sensitivity": [
+    {
+      "carbon_price": 80,
+      "metrics": {
+        "total_cost_usd": 20765142.645192135,
+        "total_co2e_tonnes": 11755.80055165016,
+        "fleet_size": 22,
+        "avg_safety_score": 4.0,
+        "total_dwt": "4580084",
+        "total_fuel_tonnes": null,
+        "total_fuel_cost": 3459759.154229217,
+        "total_carbon_cost": 940464.0441320129,
+        "total_capex": 16821545.9825,
+        "total_risk_premium": -456626.5356690989,
+        "dwt_Ammonia": 420394,
+        "dwt_DISTILLATE FUEL": 2351867,
+        "dwt_Ethanol": 207939,
+        "dwt_Hydrogen": 114563,
+        "dwt_LNG": 858405,
+        "dwt_LPG (Butane)": 210909,
+        "dwt_LPG (Propane)": 205905,
+        "dwt_Methanol": 210102
+      },
+      "error": null
+    },
+    {
+      "carbon_price": 120,
+      "metrics": {
+        "total_cost_usd": 21235374.667258132,
+        "total_co2e_tonnes": 11755.80055165016,
+        "fleet_size": 22,
+        "avg_safety_score": 4.0,
+        "total_dwt": "4580084",
+        "total_fuel_tonnes": null,
+        "total_fuel_cost": 3459759.154229217,
+        "total_carbon_cost": 1410696.066198019,
+        "total_capex": 16821545.9825,
+        "total_risk_premium": -456626.5356690989,
+        "dwt_Ammonia": 420394,
+        "dwt_DISTILLATE FUEL": 2351867,
+        "dwt_Ethanol": 207939,
+        "dwt_Hydrogen": 114563,
+        "dwt_LNG": 858405,
+        "dwt_LPG (Butane)": 210909,
+        "dwt_LPG (Propane)": 205905,
+        "dwt_Methanol": 210102
+      },
+      "error": null
+    },
+    {
+      "carbon_price": 160,
+      "metrics": {
+        "total_cost_usd": 21705606.689324144,
+        "total_co2e_tonnes": 11755.80055165016,
+        "fleet_size": 22,
+        "avg_safety_score": 4.0,
+        "total_dwt": "4580084",
+        "total_fuel_tonnes": null,
+        "total_fuel_cost": 3459759.154229217,
+        "total_carbon_cost": 1880928.0882640257,
+        "total_capex": 16821545.9825,
+        "total_risk_premium": -456626.5356690989,
+        "dwt_Ammonia": 420394,
+        "dwt_DISTILLATE FUEL": 2351867,
+        "dwt_Ethanol": 207939,
+        "dwt_Hydrogen": 114563,
+        "dwt_LNG": 858405,
+        "dwt_LPG (Butane)": 210909,
+        "dwt_LPG (Propane)": 205905,
+        "dwt_Methanol": 210102
+      },
+      "error": null
+    },
+    {
+      "carbon_price": 200,
+      "metrics": {
+        "total_cost_usd": 22175838.711390153,
+        "total_co2e_tonnes": 11755.80055165016,
+        "fleet_size": 22,
+        "avg_safety_score": 4.0,
+        "total_dwt": "4580084",
+        "total_fuel_tonnes": null,
+        "total_fuel_cost": 3459759.154229217,
+        "total_carbon_cost": 2351160.110330032,
+        "total_capex": 16821545.9825,
+        "total_risk_premium": -456626.5356690989,
+        "dwt_Ammonia": 420394,
+        "dwt_DISTILLATE FUEL": 2351867,
+        "dwt_Ethanol": 207939,
+        "dwt_Hydrogen": 114563,
+        "dwt_LNG": 858405,
+        "dwt_LPG (Butane)": 210909,
+        "dwt_LPG (Propane)": 205905,
+        "dwt_Methanol": 210102
+      },
+      "error": null
+    }
+  ],
+  "scenarios_2024": []
+}
