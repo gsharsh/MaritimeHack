@@ -10,6 +10,9 @@ Objective: minimize total cost subject to:
 from typing import Any
 
 import pandas as pd
+from pulp import LpBinary, LpMinimize, LpProblem, LpVariable, PULP_CBC_CMD, lpSum
+
+from src.constants import MONTHLY_DEMAND, SAFETY_THRESHOLD
 
 
 def validate_fleet(
@@ -61,8 +64,59 @@ def total_cost_and_metrics(
     }
 
 
-def select_fleet_greedy(*args, **kwargs):
-    raise NotImplementedError("Replaced by MILP in Phase 2")
+def select_fleet_milp(
+    df: pd.DataFrame,
+    cargo_demand: float = MONTHLY_DEMAND,
+    min_avg_safety: float = SAFETY_THRESHOLD,
+    require_all_fuel_types: bool = True,
+) -> list[int]:
+    """
+    Select minimum-cost fleet via binary MILP.
+
+    Decision variables: x_i in {0,1} for each vessel i.
+    Objective: minimize sum(x_i * final_cost_i).
+    Constraints:
+        1. sum(x_i * dwt_i) >= cargo_demand
+        2. sum(x_i * (safety_i - min_avg_safety)) >= 0  (linearized avg safety)
+        3. For each fuel type f: sum(x_i where fuel==f) >= 1  (if require_all_fuel_types)
+
+    Returns sorted list of selected vessel_id integers, or empty list if infeasible.
+    """
+    indices = list(df.index)
+    vessel_ids = df["vessel_id"].tolist()
+    costs = df["final_cost"].tolist()
+    dwts = df["dwt"].tolist()
+    safety_deltas = (df["safety_score"] - min_avg_safety).tolist()
+
+    prob = LpProblem("fleet_selection", LpMinimize)
+    x = LpVariable.dicts("x", indices, 0, 1, LpBinary)
+
+    # Objective: minimize total cost
+    prob += lpSum([costs[i] * x[i] for i in indices])
+
+    # Constraint 1: DWT >= cargo demand
+    prob += lpSum([dwts[i] * x[i] for i in indices]) >= cargo_demand, "DWT"
+
+    # Constraint 2: linearized average safety >= threshold
+    prob += lpSum([safety_deltas[i] * x[i] for i in indices]) >= 0, "Safety"
+
+    # Constraint 3: fuel diversity — at least one vessel per fuel type
+    if require_all_fuel_types:
+        fuel_types = df["main_engine_fuel_type"].unique()
+        for ft in fuel_types:
+            ft_indices = df.index[df["main_engine_fuel_type"] == ft].tolist()
+            prob += lpSum([x[i] for i in ft_indices]) >= 1, f"Fuel_{ft}"
+
+    prob.solve(PULP_CBC_CMD(msg=0))
+
+    # Status 1 = Optimal
+    if prob.status != 1:
+        return []
+
+    selected = sorted(
+        [int(vessel_ids[i]) for i in indices if x[i].varValue > 0.5]
+    )
+    return selected
 
 
 def format_outputs(metrics: dict[str, Any], sensitivity_done: bool = False) -> dict[str, Any]:

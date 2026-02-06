@@ -79,18 +79,22 @@ class TestDWTConstraint:
 
 class TestSafetyConstraint:
     def test_cheapest_combo_meeting_safety(self, vessels):
-        """With demand=500000, safety>=3.0: cheapest is {Distillate, Ammonia, LNG}."""
+        """With demand=500000, safety>=3.0: cheapest is {Distillate, LNG, Hydrogen}.
+        DWT: 175108+179700+178838=533646 >= 500000
+        Safety: (1-3)+(5-3)+(3-3) = 0 >= 0
+        Cost: 880688+1043965+1185540 = 3,110,193
+        """
         result = select_fleet_milp(
             vessels,
             cargo_demand=500_000,
             min_avg_safety=3.0,
             require_all_fuel_types=False,
         )
-        expected = sorted([10102950, 10657280, 10791900])
+        expected = sorted([10102950, 10791900, 10673120])
         assert sorted(result) == expected
 
     def test_safety_combo_cost(self, vessels):
-        """Cheapest safety-valid combo costs $3,184,869."""
+        """Cheapest safety-valid combo costs $3,110,193."""
         result = select_fleet_milp(
             vessels,
             cargo_demand=500_000,
@@ -98,7 +102,7 @@ class TestSafetyConstraint:
             require_all_fuel_types=False,
         )
         selected = vessels[vessels["vessel_id"].isin(result)]
-        assert selected["final_cost"].sum() == 3_184_869
+        assert selected["final_cost"].sum() == 3_110_193
 
 
 class TestFuelDiversityConstraint:
