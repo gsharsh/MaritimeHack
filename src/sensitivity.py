@@ -5,9 +5,11 @@ and compare costs, fleet composition, and emissions.
 
 from typing import Any
 
+import numpy as np
 import pandas as pd
+from pulp import LpBinary, LpMinimize, LpProblem, LpVariable, PULP_CBC_CMD, lpSum
 
-from src.constants import MONTHLY_DEMAND
+from src.constants import MONTHLY_DEMAND, SAFETY_THRESHOLD
 from src.optimization import select_fleet_milp, total_cost_and_metrics
 
 
@@ -94,6 +96,193 @@ def format_sweep_table(results: list[dict[str, Any]]) -> pd.DataFrame:
                 "Total CO2eq (t)": "-",
                 "Total DWT": "-",
                 "Total Fuel (t)": "-",
+            })
+
+    return pd.DataFrame(rows)
+
+
+def _solve_min_co2(
+    df: pd.DataFrame,
+    cargo_demand: float,
+    min_avg_safety: float,
+    require_all_fuel_types: bool,
+) -> float | None:
+    """
+    Solve a one-off MILP that minimizes total CO2eq subject to the same
+    feasibility constraints (DWT, safety, fuel diversity).
+
+    Returns the minimum achievable CO2eq, or None if infeasible.
+    """
+    indices = list(df.index)
+    dwts = df["dwt"].tolist()
+    safety_deltas = (df["safety_score"] - min_avg_safety).tolist()
+    co2eqs = df["CO2eq"].tolist()
+
+    prob = LpProblem("min_co2", LpMinimize)
+    x = LpVariable.dicts("x", indices, 0, 1, LpBinary)
+
+    # Objective: minimize total CO2eq
+    prob += lpSum([co2eqs[i] * x[i] for i in indices])
+
+    # Constraint 1: DWT >= cargo demand
+    prob += lpSum([dwts[i] * x[i] for i in indices]) >= cargo_demand, "DWT"
+
+    # Constraint 2: linearized average safety >= threshold
+    prob += lpSum([safety_deltas[i] * x[i] for i in indices]) >= 0, "Safety"
+
+    # Constraint 3: fuel diversity
+    if require_all_fuel_types:
+        fuel_types = df["main_engine_fuel_type"].unique()
+        for ft in fuel_types:
+            ft_indices = df.index[df["main_engine_fuel_type"] == ft].tolist()
+            prob += lpSum([x[i] for i in ft_indices]) >= 1, f"Fuel_{ft}"
+
+    prob.solve(PULP_CBC_CMD(msg=0))
+
+    if prob.status != 1:
+        return None
+
+    selected_co2 = sum(co2eqs[i] for i in indices if x[i].varValue > 0.5)
+    return selected_co2
+
+
+def run_pareto_sweep(
+    df: pd.DataFrame,
+    n_points: int = 15,
+    cargo_demand: float = MONTHLY_DEMAND,
+    min_avg_safety: float = SAFETY_THRESHOLD,
+    require_all_fuel_types: bool = True,
+) -> list[dict[str, Any]]:
+    """
+    Epsilon-constraint Pareto frontier: sweep CO2eq cap from fleet-max to
+    fleet-min in ``n_points`` steps, solve MILP at each point, and compute
+    shadow carbon prices.
+
+    Algorithm:
+    1. Run base MILP (no cap) to get cost-minimizing fleet -> co2_max.
+    2. Solve min-CO2eq MILP (same constraints) -> co2_min.
+    3. Create ``n_points`` evenly-spaced epsilon values from co2_max to co2_min.
+    4. For each epsilon, solve MILP with co2_cap=epsilon.
+    5. Compute shadow carbon price between consecutive feasible points.
+
+    Returns list of dicts with keys: epsilon, feasible, fleet_size,
+    total_cost_usd, total_co2e_tonnes, avg_safety_score, total_dwt,
+    selected_ids, shadow_carbon_price.
+    """
+    # Step 1: base MILP (cost-minimizing, no CO2 cap) -> co2_max
+    base_ids = select_fleet_milp(
+        df,
+        cargo_demand=cargo_demand,
+        min_avg_safety=min_avg_safety,
+        require_all_fuel_types=require_all_fuel_types,
+    )
+    if not base_ids:
+        # Base problem is infeasible — no Pareto frontier possible
+        return []
+
+    base_metrics = total_cost_and_metrics(df, base_ids)
+    co2_max = base_metrics["total_co2e_tonnes"]
+
+    # Step 2: min-CO2eq MILP -> co2_min
+    co2_min = _solve_min_co2(
+        df, cargo_demand, min_avg_safety, require_all_fuel_types
+    )
+    if co2_min is None:
+        # Should not happen if base is feasible, but handle gracefully
+        return []
+
+    # Step 3: build epsilon grid from co2_max down to co2_min
+    epsilons = np.linspace(co2_max, co2_min, n_points).tolist()
+
+    # Step 4: solve at each epsilon
+    results: list[dict[str, Any]] = []
+    for eps in epsilons:
+        selected_ids = select_fleet_milp(
+            df,
+            cargo_demand=cargo_demand,
+            min_avg_safety=min_avg_safety,
+            require_all_fuel_types=require_all_fuel_types,
+            co2_cap=eps,
+        )
+
+        if not selected_ids:
+            results.append({
+                "epsilon": eps,
+                "feasible": False,
+                "fleet_size": None,
+                "total_cost_usd": None,
+                "total_co2e_tonnes": None,
+                "avg_safety_score": None,
+                "total_dwt": None,
+                "selected_ids": [],
+                "shadow_carbon_price": None,
+            })
+        else:
+            metrics = total_cost_and_metrics(df, selected_ids)
+            results.append({
+                "epsilon": eps,
+                "feasible": True,
+                "fleet_size": metrics["fleet_size"],
+                "total_cost_usd": metrics["total_cost_usd"],
+                "total_co2e_tonnes": metrics["total_co2e_tonnes"],
+                "avg_safety_score": metrics["avg_safety_score"],
+                "total_dwt": metrics["total_dwt"],
+                "selected_ids": selected_ids,
+                "shadow_carbon_price": None,  # computed below
+            })
+
+    # Step 5: compute shadow carbon prices between consecutive feasible points
+    prev_feasible = None
+    for r in results:
+        if not r["feasible"]:
+            continue
+        if prev_feasible is not None:
+            co2_reduction = prev_feasible["total_co2e_tonnes"] - r["total_co2e_tonnes"]
+            cost_increase = r["total_cost_usd"] - prev_feasible["total_cost_usd"]
+            if co2_reduction > 0:
+                r["shadow_carbon_price"] = cost_increase / co2_reduction
+            else:
+                # No actual CO2 reduction (same fleet selected) -> no shadow price
+                r["shadow_carbon_price"] = None
+        prev_feasible = r
+
+    return results
+
+
+def format_pareto_table(results: list[dict[str, Any]]) -> pd.DataFrame:
+    """
+    Format Pareto sweep results as a readable comparison table.
+
+    Returns a DataFrame with columns: CO2eq Cap, Feasible, Fleet Size,
+    Total Cost ($), Actual CO2eq (t), Shadow Price ($/tCO2eq), Avg Safety.
+    Numbers formatted with commas and 2 decimal places.
+    """
+    rows = []
+    for r in results:
+        if r["feasible"]:
+            shadow = (
+                f"{r['shadow_carbon_price']:,.2f}"
+                if r["shadow_carbon_price"] is not None
+                else "-"
+            )
+            rows.append({
+                "CO2eq Cap": f"{r['epsilon']:,.2f}",
+                "Feasible": "Yes",
+                "Fleet Size": r["fleet_size"],
+                "Total Cost ($)": f"{r['total_cost_usd']:,.2f}",
+                "Actual CO2eq (t)": f"{r['total_co2e_tonnes']:,.2f}",
+                "Shadow Price ($/tCO2eq)": shadow,
+                "Avg Safety": f"{r['avg_safety_score']:.2f}",
+            })
+        else:
+            rows.append({
+                "CO2eq Cap": f"{r['epsilon']:,.2f}",
+                "Feasible": "INFEASIBLE",
+                "Fleet Size": "-",
+                "Total Cost ($)": "-",
+                "Actual CO2eq (t)": "-",
+                "Shadow Price ($/tCO2eq)": "-",
+                "Avg Safety": "-",
             })
 
     return pd.DataFrame(rows)
