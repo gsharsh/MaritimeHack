@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from pulp import LpBinary, LpMinimize, LpProblem, LpVariable, PULP_CBC_CMD, lpSum
 
-from src.constants import MONTHLY_DEMAND, SAFETY_THRESHOLD
+from src.constants import CARBON_PRICE, MONTHLY_DEMAND, SAFETY_THRESHOLD
 from src.optimization import select_fleet_milp, total_cost_and_metrics
 
 
@@ -282,6 +282,110 @@ def format_pareto_table(results: list[dict[str, Any]]) -> pd.DataFrame:
                 "Total Cost ($)": "-",
                 "Actual CO2eq (t)": "-",
                 "Shadow Price ($/tCO2eq)": "-",
+                "Avg Safety": "-",
+            })
+
+    return pd.DataFrame(rows)
+
+
+def run_carbon_price_sweep(
+    df: pd.DataFrame,
+    carbon_prices: list[float] | None = None,
+    cargo_demand: float = MONTHLY_DEMAND,
+    safety_threshold: float = SAFETY_THRESHOLD,
+) -> list[dict[str, Any]]:
+    """
+    Re-run MILP at each carbon price and collect fleet metrics.
+
+    Adjusts ``final_cost`` by removing the original carbon cost component
+    and replacing it with ``CO2eq * new_carbon_price``, then solves the
+    cost-minimising MILP on the adjusted DataFrame.
+
+    Returns a list of dicts, one per carbon price, with keys:
+    carbon_price, feasible, fleet_size, total_cost_usd, total_co2e_tonnes,
+    avg_safety_score, total_dwt, selected_ids, fuel_type_counts.
+    """
+    if carbon_prices is None:
+        carbon_prices = [80, 120, 160, 200]
+
+    results: list[dict[str, Any]] = []
+    for cp in carbon_prices:
+        df_copy = df.copy()
+
+        # Compute the original carbon cost; fall back to base CARBON_PRICE if column missing
+        if "carbon_cost" in df_copy.columns:
+            original_carbon_cost = df_copy["carbon_cost"]
+        else:
+            original_carbon_cost = df_copy["CO2eq"] * CARBON_PRICE
+
+        # Recalculate final_cost with the new carbon price
+        df_copy["final_cost"] = (
+            df_copy["final_cost"] - original_carbon_cost + df_copy["CO2eq"] * cp
+        )
+
+        selected_ids = select_fleet_milp(
+            df_copy,
+            cargo_demand=cargo_demand,
+            min_avg_safety=safety_threshold,
+        )
+
+        if not selected_ids:
+            results.append({
+                "carbon_price": cp,
+                "feasible": False,
+                "fleet_size": None,
+                "total_cost_usd": None,
+                "total_co2e_tonnes": None,
+                "avg_safety_score": None,
+                "total_dwt": None,
+                "selected_ids": [],
+                "fuel_type_counts": {},
+            })
+        else:
+            metrics = total_cost_and_metrics(df_copy, selected_ids)
+            subset = df_copy[df_copy["vessel_id"].isin(selected_ids)]
+            fuel_counts = subset["main_engine_fuel_type"].value_counts().to_dict()
+
+            results.append({
+                "carbon_price": cp,
+                "feasible": True,
+                "fleet_size": metrics["fleet_size"],
+                "total_cost_usd": metrics["total_cost_usd"],
+                "total_co2e_tonnes": metrics["total_co2e_tonnes"],
+                "avg_safety_score": metrics["avg_safety_score"],
+                "total_dwt": metrics["total_dwt"],
+                "selected_ids": selected_ids,
+                "fuel_type_counts": fuel_counts,
+            })
+
+    return results
+
+
+def format_carbon_sweep_table(results: list[dict[str, Any]]) -> pd.DataFrame:
+    """
+    Format carbon price sweep results as a readable comparison table.
+
+    Returns a DataFrame with columns: Carbon Price ($/t), Feasible,
+    Fleet Size, Total Cost ($), Total CO2eq (t), Avg Safety.
+    """
+    rows = []
+    for r in results:
+        if r["feasible"]:
+            rows.append({
+                "Carbon Price ($/t)": r["carbon_price"],
+                "Feasible": "Yes",
+                "Fleet Size": r["fleet_size"],
+                "Total Cost ($)": f"{r['total_cost_usd']:,.2f}",
+                "Total CO2eq (t)": f"{r['total_co2e_tonnes']:,.2f}",
+                "Avg Safety": f"{r['avg_safety_score']:.2f}",
+            })
+        else:
+            rows.append({
+                "Carbon Price ($/t)": r["carbon_price"],
+                "Feasible": "INFEASIBLE",
+                "Fleet Size": "-",
+                "Total Cost ($)": "-",
+                "Total CO2eq (t)": "-",
                 "Avg Safety": "-",
             })
 
