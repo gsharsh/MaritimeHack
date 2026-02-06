@@ -18,7 +18,7 @@ None
 - [x] **Phase 2: MILP Fleet Optimizer** - Replace greedy solver with PuLP MILP (Step 7)
 - [x] **Phase 3: Validation** - Verify MILP against 5 checkpoint vessels and expected ranges
 - [x] **Phase 4: Safety Threshold Sweep** - Re-run MILP at 3.0/3.5/4.0/4.5, compare results (Step 10)
-- [ ] **Phase 5: Cost-Emissions Pareto Frontier** - Epsilon-constraint method, shadow carbon prices, carbon price sweep (Step 8)
+- [x] **Phase 5: Cost-Emissions Pareto Frontier** - Epsilon-constraint method, shadow carbon prices, carbon price sweep (Step 8)
 - [ ] **Phase 6: Submission & Charts** - Fill submission CSV, Pareto chart, fleet bars, safety table
 
 ## Phase Details
@@ -78,7 +78,7 @@ Plans:
 
 Plans:
 - [x] 05-01: Epsilon-constraint Pareto sweep + shadow carbon prices (2 tasks) ✓
-- [ ] 05-02: Carbon price sweep + CLI wiring (2 tasks)
+- [x] 05-02: Carbon price sweep + CLI wiring (2 tasks) ✓
 
 ### Phase 6: Submission & Charts
 **Goal**: Fill submission_template.csv with base case results (matching column order exactly). Generate matplotlib charts: Pareto frontier curve (cost vs CO2eq), fleet composition stacked bars (by fuel type across thresholds), safety comparison table. Save all to outputs/.
@@ -100,5 +100,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 (and 5 in parallel) → 6
 | 2. MILP Fleet Optimizer | 2/2 | Complete | 2026-02-06 |
 | 3. Validation | 1/1 | Complete | 2026-02-06 |
 | 4. Safety Threshold Sweep | 1/1 | Complete | 2026-02-06 |
-| 5. Cost-Emissions Pareto Frontier | 1/2 | In progress | - |
+| 5. Cost-Emissions Pareto Frontier | 2/2 | Complete | 2026-02-06 |
 | 6. Submission & Charts | 0/? | Not started | - |
