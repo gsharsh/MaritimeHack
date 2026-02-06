@@ -291,25 +291,20 @@ def plot_safety_comparison(
 def plot_macc(
     pareto_results: list[dict[str, Any]],
     output_path: str = "outputs/charts/macc.png",
-) -> str:
+) -> tuple[str, str]:
     """
     Plot Marginal Abatement Cost Curve (MACC) from Pareto frontier data.
 
-    Each bar represents a Pareto step: width = CO2 reduction, height = shadow carbon price.
-    Bars are colored by cost: green (<$100/t), yellow ($100-$500/t), red (>$500/t).
+    Produces two charts:
+    - Linear version (capped y-axis) for presentation slides → output_path
+    - Log-scale full-range version for appendix → macc_full_range.png
 
-    Parameters
-    ----------
-    pareto_results : list[dict]
-        Output from run_pareto_sweep(). Each dict has keys:
-        feasible, total_co2e_tonnes, total_cost_usd, shadow_carbon_price.
-    output_path : str
-        File path for the saved PNG.
+    Each bar is numbered and keyed to a reference table printed to console.
 
     Returns
     -------
-    str
-        The path to the saved chart file.
+    tuple[str, str]
+        (linear_chart_path, log_chart_path)
     """
     # Filter to feasible points with a shadow_carbon_price
     steps = [
@@ -319,12 +314,12 @@ def plot_macc(
 
     if not steps:
         print("WARNING: No feasible Pareto points with shadow prices to plot MACC.")
-        return output_path
+        return output_path, output_path
 
     # Sort by shadow_carbon_price ascending (cheapest abatement first)
     steps.sort(key=lambda r: r["shadow_carbon_price"])
 
-    # Base case is the max-emissions feasible point (first feasible point, no shadow price)
+    # Base case is the max-emissions feasible point
     base_co2 = max(
         r["total_co2e_tonnes"]
         for r in pareto_results
@@ -335,6 +330,7 @@ def plot_macc(
     bar_widths = []
     bar_heights = []
     bar_lefts = []
+    bar_steps = []  # keep step data for reference table
     cumulative = 0.0
 
     for step in steps:
@@ -345,70 +341,124 @@ def plot_macc(
         bar_lefts.append(cumulative)
         bar_widths.append(width)
         bar_heights.append(step["shadow_carbon_price"])
+        bar_steps.append(step)
         cumulative = reduction
 
     if not bar_widths:
         print("WARNING: No positive CO2 reduction steps for MACC.")
-        return output_path
+        return output_path, output_path
 
-    # Color bars by cost: green < $100, yellow $100-$500, red > $500
+    n_bars = len(bar_widths)
+
+    # Color bars by cost tier
     bar_colors = []
+    tier_labels = []
     for h in bar_heights:
         if h < 100:
             bar_colors.append("#22c55e")  # green
+            tier_labels.append("Low")
         elif h < 500:
             bar_colors.append("#eab308")  # yellow
+            tier_labels.append("Mid")
         else:
             bar_colors.append("#ef4444")  # red
+            tier_labels.append("High")
 
-    fig, ax = plt.subplots(figsize=(10, 6))
-
-    # Draw bars (waterfall-style step bars)
-    ax.bar(
-        bar_lefts,
-        bar_heights,
-        width=bar_widths,
-        align="edge",
-        color=bar_colors,
-        edgecolor="white",
-        linewidth=0.5,
-    )
-
-    # Reference line at current carbon price ($80/t)
-    ax.axhline(y=80, color="gray", linestyle="--", linewidth=1.5, alpha=0.7)
-    ax.text(
-        cumulative * 0.02,
-        82,
-        "Current carbon price ($80/t)",
-        fontsize=9,
-        color="gray",
-        va="bottom",
-    )
-
-    # Annotate total abatement potential
-    ax.annotate(
-        f"Total abatement:\n{cumulative:,.0f} t CO2eq",
-        xy=(cumulative, 0),
-        xytext=(-15, 30),
-        textcoords="offset points",
-        fontsize=9,
-        ha="right",
-        arrowprops=dict(arrowstyle="->", color="gray"),
-        bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow", edgecolor="gray"),
-    )
-
-    ax.set_xlabel("Cumulative CO2eq Reduction (tonnes)", fontsize=12)
-    ax.set_ylabel("Marginal Cost ($/tCO2eq)", fontsize=12)
-    ax.set_title("Marginal Abatement Cost Curve", fontsize=14, fontweight="bold")
-    ax.grid(True, alpha=0.3, linestyle="--", axis="y")
-
-    plt.tight_layout()
+    # Print reference table
+    print(f"\n  MACC Reference Table ({n_bars} abatement steps)")
+    print(f"  {'#':>3}  {'Tier':<5} {'Marginal Cost':>14} {'CO2 Reduced':>12} {'Cumulative':>12}")
+    print(f"  {'---':>3}  {'-----':<5} {'-' * 14:>14} {'-' * 12:>12} {'-' * 12:>12}")
+    running = 0.0
+    for i, (w, h, t) in enumerate(zip(bar_widths, bar_heights, tier_labels), 1):
+        running += w
+        print(f"  {i:>3}  {t:<5} {'${:,.0f}/t'.format(h):>14} {'{:,.0f} t'.format(w):>12} {'{:,.0f} t'.format(running):>12}")
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    fig.savefig(output_path, dpi=150)
-    plt.close(fig)
 
-    return output_path
+    def _draw_macc(ax, yscale, y_cap=None):
+        """Draw MACC bars on the given axes."""
+        ax.bar(
+            bar_lefts,
+            bar_heights,
+            width=bar_widths,
+            align="edge",
+            color=bar_colors,
+            edgecolor="#555555",
+            linewidth=0.8,
+        )
+
+        if yscale == "log":
+            ax.set_yscale("log")
+            ax.set_ylim(bottom=max(0.5, min(bar_heights) * 0.5))
+
+        if y_cap is not None:
+            ax.set_ylim(top=y_cap)
+            # Mark truncated bars with a small triangle at cap
+            for i, (left, w, h) in enumerate(zip(bar_lefts, bar_widths, bar_heights)):
+                if h > y_cap:
+                    ax.plot(
+                        left + w / 2, y_cap * 0.95,
+                        marker="^", color="white", markersize=5, zorder=5,
+                    )
+
+        # Bar number labels
+        for i, (left, w, h) in enumerate(zip(bar_lefts, bar_widths, bar_heights), 1):
+            display_h = min(h, y_cap) if y_cap else h
+            if yscale == "log":
+                label_y = h * 1.2
+            else:
+                label_y = min(h, y_cap if y_cap else h) + (y_cap or max(bar_heights)) * 0.02
+            ax.text(
+                left + w / 2,
+                label_y,
+                str(i),
+                ha="center",
+                va="bottom",
+                fontsize=7,
+                fontweight="bold",
+                color="#333333",
+            )
+
+        # Reference line at current carbon price ($80/t)
+        ax.axhline(y=80, color="gray", linestyle="--", linewidth=1.5, alpha=0.7)
+        ref_y = 85 if yscale == "log" else 85
+        ax.text(
+            cumulative * 0.02, ref_y,
+            "Carbon price ($80/t)",
+            fontsize=8, color="gray", va="bottom",
+        )
+
+        # Legend for tiers
+        from matplotlib.patches import Patch
+        legend_elements = [
+            Patch(facecolor="#22c55e", edgecolor="#555", label="< $100/t"),
+            Patch(facecolor="#eab308", edgecolor="#555", label="$100–500/t"),
+            Patch(facecolor="#ef4444", edgecolor="#555", label="> $500/t"),
+        ]
+        ax.legend(handles=legend_elements, loc="upper left", fontsize=8, framealpha=0.9)
+
+        ax.set_xlabel("Cumulative CO2eq Reduction (tonnes)", fontsize=11)
+        ax.set_ylabel("Marginal Cost ($/tCO2eq)", fontsize=11)
+        ax.grid(True, alpha=0.3, linestyle="--", axis="y")
+
+    # --- Chart 1: Linear, capped at $500 (presentation slide) ---
+    fig1, ax1 = plt.subplots(figsize=(10, 5.5))
+    _draw_macc(ax1, yscale="linear", y_cap=500)
+    ax1.set_title("Marginal Abatement Cost Curve — Actionable Range", fontsize=13, fontweight="bold")
+    plt.tight_layout()
+    fig1.savefig(output_path, dpi=150)
+    plt.close(fig1)
+
+    # --- Chart 2: Log scale, full range (appendix) ---
+    log_path = output_path.replace("macc.png", "macc_full_range.png")
+    fig2, ax2 = plt.subplots(figsize=(10, 5.5))
+    _draw_macc(ax2, yscale="log")
+    ax2.set_title("Marginal Abatement Cost Curve — Full Range (Log Scale)", fontsize=13, fontweight="bold")
+    plt.tight_layout()
+    fig2.savefig(log_path, dpi=150)
+    plt.close(fig2)
+
+    return output_path, log_path
 
 
 def plot_carbon_sweep(

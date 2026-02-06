@@ -330,8 +330,9 @@ def main() -> None:
         chart_path = plot_pareto_frontier(pareto_results)
         print(f"Pareto chart saved to: {chart_path}")
 
-        macc_path = plot_macc(pareto_results)
+        macc_path, macc_log_path = plot_macc(pareto_results)
         print(f"MACC chart saved to: {macc_path}")
+        print(f"MACC full-range chart saved to: {macc_log_path}")
 
         print("=" * 60)
 

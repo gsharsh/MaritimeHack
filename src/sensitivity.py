@@ -160,7 +160,7 @@ def _solve_min_co2(
 
 def run_pareto_sweep(
     df: pd.DataFrame,
-    n_points: int = 15,
+    n_points: int = 50,
     cargo_demand: float = MONTHLY_DEMAND,
     min_avg_safety: float = SAFETY_THRESHOLD,
     require_all_fuel_types: bool = True,
