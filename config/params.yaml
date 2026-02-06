@@ -1,9 +1,9 @@
 # Maritime Hackathon 2026 - Smart Fleet Selection
 # Global parameters (override with actual hackathon data when provided)
 
-# Cargo demand: monthly bunker tonnes (from MPA Annual Report 2024, Page 10, distributed over 12 months)
-# Example: 49.83 M tonnes/year -> 4.15 M tonnes/month
-cargo_demand_tonnes: 4150000  # Update from MPA 2024 report
+# Cargo demand: monthly bunker tonnes
+# Updated from SOP: 54,920,000 / 12 = 4,576,667
+cargo_demand_tonnes: 4576667
 
 # Route: Singapore (A) to Australia West coast (B) - single voyage, no return/round trips
 route:

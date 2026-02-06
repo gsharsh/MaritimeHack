@@ -1,106 +1,75 @@
 #!/usr/bin/env python3
 """
-Run fleet selection: load data, compute costs, optimize, optionally run sensitivity.
-Outputs results and submission-ready metrics.
+Run fleet selection: load per-vessel data, print fleet summary.
+Phase 1 staging script — MILP optimization will be added in Phase 2.
 """
 
 import argparse
 import sys
 from pathlib import Path
 
-import pandas as pd
-
 # Add project root for imports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from src.data_loader import load_config, load_global_params, load_ships
-from src.cost_model import ship_total_cost_usd
-from src.optimization import (
-    format_outputs,
-    select_fleet_greedy,
-    total_cost_and_metrics,
-)
-from src.sensitivity import run_sensitivity, sensitivity_summary_for_report
-from src.utils import data_path, outputs_path, voyage_hours_from_nm_and_speed, SINGAPORE_TO_AU_WEST_NM
+from src.data_adapter import load_per_vessel, validate_per_vessel
+from src.constants import MONTHLY_DEMAND, SAFETY_THRESHOLD, FUEL_TYPES, CARBON_PRICE
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Smart Fleet Selection - Maritime Hackathon 2026")
-    parser.add_argument("--ships", type=str, default=None, help="Path to ships CSV")
-    parser.add_argument("--global-params", type=str, default=None, help="Path to global params YAML/JSON")
-    parser.add_argument("--config", type=str, default="config/params.yaml", help="Path to config YAML")
-    parser.add_argument("--sensitivity", action="store_true", help="Run sensitivity analysis")
-    parser.add_argument("--out-dir", type=str, default="outputs/results", help="Output directory")
+    parser = argparse.ArgumentParser(
+        description="Smart Fleet Selection - Maritime Hackathon 2026"
+    )
+    parser.add_argument(
+        "--data",
+        type=str,
+        default=None,
+        help="Path to per_vessel.csv (default: data/processed/per_vessel.csv or fixtures)",
+    )
+    parser.add_argument(
+        "--out-dir",
+        type=str,
+        default="outputs/results",
+        help="Output directory",
+    )
     args = parser.parse_args()
 
-    root = Path(__file__).resolve().parent
-    config_path = root / args.config
-    if not config_path.exists():
-        print(f"Config not found: {config_path}")
-        sys.exit(1)
-    config = load_config(config_path)
-    cargo_demand = config.get("cargo_demand_tonnes", 4_150_000)
-    min_safety = config["constraints"].get("min_avg_safety_score", 3.0)
-    require_all_fuel = config["constraints"].get("require_all_fuel_types", True)
+    # --- Load data -----------------------------------------------------------
+    print("=" * 60)
+    print("Smart Fleet Selection - Maritime Hackathon 2026")
+    print("=" * 60)
 
-    given_data_ships = root / "given_data" / "vessel_movements_dataset.csv"
-    ships_path = args.ships or (str(given_data_ships) if given_data_ships.exists() else str(data_path("raw", "ships.csv")))
-    global_params_path = args.global_params or str(data_path("global_params", "global_params.yaml"))
+    df = load_per_vessel(args.data)
+    print(f"\nLoaded {len(df)} vessels")
 
-    if not Path(ships_path).exists():
-        print(f"Ships file not found: {ships_path}. Use given_data/vessel_movements_dataset.csv or add data/raw/ships.csv.")
-        sys.exit(1)
+    # --- Data summary --------------------------------------------------------
+    fuel_types_found = sorted(df["main_engine_fuel_type"].unique())
+    print(f"Fuel types found ({len(fuel_types_found)}): {fuel_types_found}")
+    print(f"Total DWT: {df['dwt'].sum():,.0f}")
+    print(f"Total final_cost: ${df['final_cost'].sum():,.2f}")
+    print(f"Average safety score: {df['safety_score'].mean():.2f}")
 
-    df = load_ships(ships_path)
-    global_params = {}
-    if Path(global_params_path).exists():
-        global_params = load_global_params(global_params_path)
-    else:
-        print("Global params not found; using defaults. Add data/global_params/global_params.yaml for real costs.")
+    # Count by fuel type
+    print("\nVessels by fuel type:")
+    for ft, count in df["main_engine_fuel_type"].value_counts().items():
+        print(f"  {ft}: {count}")
 
-    # Default voyage hours from Vref if no route data
-    voyage_nm = global_params.get("voyage_nm", SINGAPORE_TO_AU_WEST_NM)
-    df["voyage_hours"] = df.apply(
-        lambda r: voyage_hours_from_nm_and_speed(voyage_nm, r.get("vref", 12)),
-        axis=1,
-    )
-    carbon_price = config.get("carbon_price_usd_per_tco2e", 80)
-    global_params.setdefault("carbon_price_usd_per_tco2e", carbon_price)
+    # --- Validate (production checks) ----------------------------------------
+    ok, errors = validate_per_vessel(df)
+    print(f"\nProduction validation: {'PASS' if ok else 'FAIL'}")
+    if errors:
+        for err in errors:
+            print(f"  - {err}")
 
-    # Compute cost columns per ship
-    rows = []
-    for _, row in df.iterrows():
-        costs = ship_total_cost_usd(row, global_params, row["voyage_hours"])
-        rows.append({**row.to_dict(), **costs})
-    df = pd.DataFrame(rows)
+    # --- Constants summary ---------------------------------------------------
+    print(f"\nConstants from SOP:")
+    print(f"  MONTHLY_DEMAND = {MONTHLY_DEMAND:,}")
+    print(f"  SAFETY_THRESHOLD = {SAFETY_THRESHOLD}")
+    print(f"  CARBON_PRICE = ${CARBON_PRICE}/tCO2e")
+    print(f"  FUEL_TYPES = {len(FUEL_TYPES)} types")
 
-    selected = select_fleet_greedy(
-        df,
-        cargo_demand_tonnes=cargo_demand,
-        min_avg_safety=min_safety,
-        require_all_fuel_types=require_all_fuel,
-    )
-    metrics = total_cost_and_metrics(df, selected)
-    out = format_outputs(metrics, sensitivity_done=False)
-
-    if args.sensitivity:
-        sens_config = config.get("sensitivity", {})
-        scores = sens_config.get("safety_scores_to_try", [3.0, 4.0])
-        sens_results = run_sensitivity(
-            df, cargo_demand, scores, require_all_fuel, "total_cost_usd"
-        )
-        out["Sensitivity analysis performed"] = "Yes"
-        summary = sensitivity_summary_for_report(sens_results)
-        out_dir = root / args.out_dir
-        out_dir.mkdir(parents=True, exist_ok=True)
-        (out_dir / "sensitivity_summary.txt").write_text(summary)
-        print("Sensitivity summary:\n", summary)
-
-    out_dir = root / args.out_dir
-    out_dir.mkdir(parents=True, exist_ok=True)
-    for k, v in out.items():
-        print(f"  {k}: {v}")
-    return
+    # --- Ready for Phase 2 ---------------------------------------------------
+    print(f"\nReady for Phase 2: MILP optimization")
+    print("=" * 60)
 
 
 if __name__ == "__main__":
