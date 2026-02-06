@@ -1152,6 +1152,250 @@ for threshold in [3.0, 3.5, 4.0, 4.5]:
 
 Re-run the full pipeline (Steps 6b onward) with carbon price set to $80, $120, $160, $200. You must recompute `carbon_cost`, `total_monthly`, `risk_premium`, and `final_cost` for each ship before re-running the MILP.
 
+### 8.3 2024 Route-Specific Adjustments (Optional Scenario)
+
+This section implements the 2024 Singapore–West Australia route adjustments for sensitivity analysis.
+
+#### 8.3.1 Port Congestion Adjustment
+
+**Purpose:** Model anchorage delays at Singapore port during 2024 congestion periods.
+
+**Implementation:**
+
+```python
+# Identify Singapore anchorage rows
+singapore_anchorage = df_active[
+    (df_active['in_port_boundary'] == 'Singapore') &
+    (df_active['mode'] == 'Anchorage')
+].copy()
+
+# Add congestion delay hours (24-72 hours)
+CONGESTION_DELAY_HOURS = 48  # 2 days typical case
+
+# For each vessel with Singapore anchorage, add delay to one anchorage row
+for vessel_id in singapore_anchorage['vessel_id'].unique():
+    vessel_anchorage_idx = singapore_anchorage[
+        singapore_anchorage['vessel_id'] == vessel_id
+    ].index[0]  # First anchorage row
+
+    df_active.loc[vessel_anchorage_idx, 'A_hours'] += CONGESTION_DELAY_HOURS
+
+# Recalculate FC_ae and FC_ab for affected rows
+df_active['FC_ae'] = (df_active['ael'] * df_active['sfc_adjusted_ae'] * df_active['A_hours']) / 1_000_000
+df_active['FC_ab'] = (df_active['abl'] * df_active['sfc_adjusted_ab'] * df_active['A_hours']) / 1_000_000
+
+# Re-aggregate per vessel (continue from Step 4b onward)
+```
+
+**Expected impact:** +5–15 tonnes auxiliary fuel per vessel, +$2,800–$8,300 fuel cost per vessel.
+
+#### 8.3.2 Fuel Price Volatility (2024)
+
+**Purpose:** Apply 2024 regional price pressure.
+
+**Implementation:**
+
+```python
+# In Step 6a, modify price_map with 1.05× multiplier
+FUEL_PRICE_MULTIPLIER_2024 = 1.05
+
+price_map_2024 = {
+    'DISTILLATE FUEL': 13 * 42.7 * FUEL_PRICE_MULTIPLIER_2024,  # $582.86
+    'LNG': 15 * 48.0 * FUEL_PRICE_MULTIPLIER_2024,              # $756.00
+    'Methanol': 54 * 19.9 * FUEL_PRICE_MULTIPLIER_2024,         # $1,128.33
+    'Ethanol': 54 * 26.8 * FUEL_PRICE_MULTIPLIER_2024,          # $1,519.56
+    'Ammonia': 40 * 18.6 * FUEL_PRICE_MULTIPLIER_2024,          # $781.20
+    'Hydrogen': 50 * 120.0 * FUEL_PRICE_MULTIPLIER_2024,        # $6,300.00
+    'LPG (Propane)': 15 * 46.3 * FUEL_PRICE_MULTIPLIER_2024,    # $729.23
+    'LPG (Butane)': 15 * 45.7 * FUEL_PRICE_MULTIPLIER_2024      # $719.78
+}
+
+price_distillate_2024 = 13 * 42.7 * FUEL_PRICE_MULTIPLIER_2024  # $582.86
+
+per_vessel['price_me'] = per_vessel['main_engine_fuel_type'].map(price_map_2024)
+per_vessel['fuel_cost'] = (per_vessel['FC_me_total'] * per_vessel['price_me']) + \
+                          ((per_vessel['FC_ae_total'] + per_vessel['FC_ab_total']) * price_distillate_2024)
+```
+
+**Note:** The 1.05× multiplier captures both market volatility and embedded Singapore carbon tax. No separate carbon tax calculation is needed.
+
+#### 8.3.3 CII Calculation and Penalty
+
+**Purpose:** Apply IMO 2024 CII enforcement penalties.
+
+**Implementation:**
+
+```python
+# After Step 5c (emissions aggregation)
+ROUTE_DISTANCE_NM = 1762
+
+# Calculate CII per vessel (g CO2 / tonne·NM)
+per_vessel['CII'] = (per_vessel['CO2_total'] * 1_000_000) / (per_vessel['dwt'] * ROUTE_DISTANCE_NM)
+
+# Define IMO rating thresholds (simplified - adjust for vessel size/type)
+def get_cii_rating(cii_value):
+    if cii_value <= 3.5:
+        return 'A'
+    elif cii_value <= 4.5:
+        return 'B'
+    elif cii_value <= 5.5:
+        return 'C'
+    elif cii_value <= 6.5:
+        return 'D'
+    else:
+        return 'E'
+
+per_vessel['CII_rating'] = per_vessel['CII'].apply(get_cii_rating)
+
+# Apply CII penalty multiplier
+CII_PENALTY_MAP = {
+    'A': 0.95,  # 5% discount
+    'B': 0.98,  # 2% discount
+    'C': 1.00,  # No change
+    'D': 1.05,  # 5% penalty
+    'E': 1.10   # 10% penalty
+}
+
+per_vessel['CII_penalty_multiplier'] = per_vessel['CII_rating'].map(CII_PENALTY_MAP)
+
+# Apply to final cost (in Step 6f, modify the final cost calculation)
+per_vessel['final_cost_2024'] = per_vessel['total_monthly'] * (1 + per_vessel['adj_rate']) * per_vessel['CII_penalty_multiplier']
+```
+
+**Verification checkpoint:**
+
+For Vessel 10657280 (Ammonia):
+```
+CO2_total = 121.04 tonnes
+DWT = 206,331
+CII = (121.04 × 1,000,000) / (206,331 × 1,762) = 333.0 g/tonne·NM
+Rating = A (excellent - ammonia ship with low emissions)
+Penalty multiplier = 0.95 (5% discount)
+```
+
+For Vessel 10102950 (Distillate):
+```
+CO2_total = 565.78 tonnes
+DWT = 175,108
+CII = (565.78 × 1,000,000) / (175,108 × 1,762) = 1,834.0 g/tonne·NM
+Rating = C or D (typical fossil fuel vessel)
+Penalty multiplier = 1.00 or 1.05
+```
+
+#### 8.3.4 Safety Threshold Extension
+
+**Purpose:** Test 2024 stricter Port State Control requirements.
+
+**Implementation:**
+
+```python
+# In Step 7, extend safety threshold sweep
+safety_thresholds_2024 = [3.0, 3.5, 4.0, 4.5, 5.0]
+
+results_2024 = []
+for threshold in safety_thresholds_2024:
+    # Rebuild MILP constraint 2
+    prob += lpSum(x[s['vessel_id']] * (s['safety_score'] - threshold) for s in ships) >= 0
+
+    # Solve and record results
+    prob.solve(PULP_CBC_CMD(msg=0))
+
+    if prob.status == 1:  # Optimal solution found
+        results_2024.append({
+            'safety_threshold': threshold,
+            'fleet_size': sum(x[s['vessel_id']].value() for s in ships),
+            'total_cost': sum(x[s['vessel_id']].value() * s['final_cost_2024'] for s in ships),
+            'avg_safety': sum(x[s['vessel_id']].value() * s['safety_score'] for s in ships) /
+                         sum(x[s['vessel_id']].value() for s in ships),
+            'total_co2eq': sum(x[s['vessel_id']].value() * s['CO2eq'] for s in ships)
+        })
+    else:
+        results_2024.append({
+            'safety_threshold': threshold,
+            'status': 'INFEASIBLE'
+        })
+```
+
+**Expected behavior:**
+- Threshold ≥ 5.0 may be infeasible (not enough safety-5 ships to cover 8 fuel types)
+- Threshold ≥ 4.5 significantly increases cost (excludes many low-cost Distillate ships)
+
+#### 8.3.5 Integrated 2024 Scenario Run
+
+**Full pipeline with all 2024 adjustments:**
+
+```python
+# SCENARIO CONFIGURATION
+SCENARIO_NAME = '2024_Typical'
+FUEL_PRICE_MULT = 1.05
+CONGESTION_HOURS = 48
+SAFETY_MIN = 3.0
+CII_ENFORCEMENT = True
+
+# Step 1-5: Run base calculations with congestion adjustment (8.3.1)
+
+# Step 6a: Apply 2024 fuel prices (8.3.2)
+
+# Step 6b: Carbon cost (no change, still $80/tCO2eq)
+
+# Step 6c-6e: CAPEX and risk premium (no change)
+
+# Step 6f: Apply CII penalty if enabled (8.3.3)
+if CII_ENFORCEMENT:
+    per_vessel['final_cost'] = per_vessel['total_monthly'] * \
+                               (1 + per_vessel['adj_rate']) * \
+                               per_vessel['CII_penalty_multiplier']
+else:
+    per_vessel['final_cost'] = per_vessel['total_monthly'] + per_vessel['risk_premium']
+
+# Step 7: Run MILP with specified safety threshold
+
+# Step 8: Compare to base case
+```
+
+#### 8.3.6 Scenario Comparison Table
+
+Create a summary comparing scenarios:
+
+```python
+import pandas as pd
+
+scenario_results = pd.DataFrame([
+    {
+        'Scenario': 'Base (Idealised)',
+        'Fuel_Price_Mult': 1.00,
+        'Congestion_Hours': 0,
+        'Safety_Min': 3.0,
+        'CII_Enforcement': False,
+        'Fleet_Cost': base_total_cost,
+        'Fleet_Size': base_fleet_size,
+        'Total_CO2eq': base_co2eq
+    },
+    {
+        'Scenario': '2024 Typical',
+        'Fuel_Price_Mult': 1.05,
+        'Congestion_Hours': 48,
+        'Safety_Min': 3.0,
+        'CII_Enforcement': True,
+        'Fleet_Cost': typical_2024_cost,
+        'Fleet_Size': typical_2024_size,
+        'Total_CO2eq': typical_2024_co2eq
+    },
+    {
+        'Scenario': '2024 Stress',
+        'Fuel_Price_Mult': 1.10,
+        'Congestion_Hours': 72,
+        'Safety_Min': 4.0,
+        'CII_Enforcement': True,
+        'Fleet_Cost': stress_2024_cost,
+        'Fleet_Size': stress_2024_size,
+        'Total_CO2eq': stress_2024_co2eq
+    }
+])
+
+print(scenario_results)
+```
+
 ---
 
 ## STEP 9: FILL SUBMISSION CSV

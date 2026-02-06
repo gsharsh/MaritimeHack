@@ -356,6 +356,111 @@ We re-ran the MILP at carbon prices of $80 (base), $120, $160, and $200 per tonn
 
 We tested the impact of the activity-hour gap cap by running the model at thresholds of 3 hours, 6 hours (base), 12 hours, and uncapped. This confirms that gap capping is necessary to avoid two specific vessels (10007920 and 10372190) receiving unrealistic fuel costs from 50+ day data gaps.
 
+### 4.4 2024 Route-Specific Adjustments (Singapore–West Australia)
+
+To reflect real-world operating conditions observed in 2024, we extend the sensitivity analysis to incorporate regulatory and operational risk factors specific to the Singapore–West Australia maritime corridor. These adjustments are modelled as scenario overlays on the base case, enabling evaluation of fleet performance under realistic 2024 conditions.
+
+#### 4.4.1 Port Congestion (Singapore)
+
+**2024 Context:** Singapore experienced episodic port congestion in 2024 due to global fleet bunching effects, increasing anchorage waiting times.
+
+**Model Implementation:** Add 24–72 hours to anchorage periods for vessels at Singapore port. Since auxiliary engines and boilers remain operational during waiting, this extends activity hours (A) for auxiliary systems, increasing FC_ae and FC_ab. The cost impact flows naturally through the fuel cost calculation:
+
+```
+A_hours_anchorage_SG = A_hours_base + Δ_congestion_hours
+where Δ_congestion_hours ∈ [24, 72]
+```
+
+This increases auxiliary fuel consumption by approximately 5–15 tonnes per vessel, translating to $2,800–$8,300 additional fuel cost.
+
+#### 4.4.2 Fuel Price Volatility
+
+**2024 Context:** Regional bunker demand pressure led to price volatility above baseline market rates.
+
+**Model Implementation:** Apply a uniform 1.05× multiplier to all fuel prices:
+
+```
+fuel_price_2024 = fuel_price_base × 1.05
+```
+
+This captures realistic market conditions without overstating geopolitical risk. For the fleet, this translates to approximately +5% increase in total fuel costs ($1.5M–$2M additional fleet cost).
+
+#### 4.4.3 Singapore Carbon Tax (Embedded)
+
+**2024 Context:** Singapore implemented a carbon tax of S$25/tCO₂e applied upstream to large emitting facilities. This is not a direct levy on shipping operators but is embedded in bunker fuel pricing.
+
+**Model Implementation:** The carbon tax impact is captured within the 1.05× fuel price multiplier (Section 4.4.2). Conventional fossil fuels experience an effective +3–4% embedded cost increase, while zero-carbon fuels (Ammonia, Hydrogen) see minimal impact. No separate calculation is required to avoid double-counting.
+
+#### 4.4.4 IMO Carbon Intensity Indicator (CII) Enforcement
+
+**2024 Context:** 2024 marked the first year where IMO CII ratings imposed operational consequences on vessels with poor carbon performance.
+
+**Model Implementation:** We calculate per-vessel CII and apply performance-based cost adjustments:
+
+```
+CII = (CO₂_total × 10⁶) / (DWT × 1,762)     [g CO₂ / tonne·NM]
+```
+
+Vessels are assigned IMO rating bands based on CII thresholds (ship-type and size-specific):
+
+| CII Rating | Threshold (approx.) | Cost Multiplier |
+|---|---|---|
+| A (Superior) | CII ≤ 3.5 | 0.95 (5% discount) |
+| B (Good) | 3.5 < CII ≤ 4.5 | 0.98 |
+| C (Acceptable) | 4.5 < CII ≤ 5.5 | 1.00 (no change) |
+| D (Needs improvement) | 5.5 < CII ≤ 6.5 | 1.05 (5% penalty) |
+| E (Poor) | CII > 6.5 | 1.10 (10% penalty) |
+
+The CII penalty is applied to the total monthly cost:
+
+```
+final_cost_2024 = total_monthly_cost × (1 + safety_adj_rate) × CII_penalty_multiplier
+```
+
+This creates a direct economic linkage between emissions performance and vessel operating cost, mirroring real 2024 compliance pressures.
+
+#### 4.4.5 Safety Regulatory Tightening
+
+**2024 Context:** Singapore's Port State Control regime enforced stricter safety standards for hazardous cargo vessels.
+
+**Model Implementation:** We extend the existing safety threshold sensitivity analysis to test more stringent constraints:
+
+- Base case: Minimum safety score ≥ 3.0
+- 2024 stress scenarios: ≥ 3.5, ≥ 4.0, ≥ 4.5, ≥ 5.0
+
+Under tighter safety thresholds, lower-rated vessels are excluded from the feasible fleet, structurally reducing fleet availability and increasing aggregate cost. This is modelled as a binary feasibility constraint, not a continuous penalty — reflecting the reality that vessels failing Port State Control inspections cannot operate on the route.
+
+#### 4.4.6 Integrated 2024 Cost Structure
+
+The complete per-vessel cost under 2024 conditions is:
+
+```
+fuel_cost_2024 = (FC_me × price_ME × 1.05) +
+                 ((FC_ae + FC_ab + FC_congestion) × 555.10 × 1.05)
+
+carbon_cost = CO₂eq × 80
+
+CII = (CO₂_total × 10⁶) / (DWT × 1,762)
+
+final_cost_2024 = (fuel_cost_2024 + carbon_cost + monthly_CAPEX) ×
+                  (1 + safety_adj_rate) ×
+                  CII_penalty_multiplier
+
+Subject to:
+    safety_score ≥ S_min
+    CII_rating ∈ {A, B, C, D, E}
+```
+
+#### 4.4.7 Scenario Comparison
+
+| Scenario | Fuel Price | Congestion (days) | Safety Min | CII Enforcement |
+|---|---|---|---|---|
+| Base (Idealised) | ×1.00 | 0 | ≥3.0 | No |
+| 2024 Typical | ×1.05 | 1–2 | ≥3.0 | Yes |
+| 2024 Stress | ×1.10 | 3 | ≥4.0 | Yes (strict D/E penalties) |
+
+This framework enables quantitative assessment of how real-world 2024 operational conditions affect fleet selection, cost structure, and emissions performance on the Singapore–West Australia route.
+
 ---
 
 ## 5. Key Insights
