@@ -181,3 +181,108 @@ def plot_fleet_composition(
     plt.close(fig)
 
     return output_path
+
+
+def plot_safety_comparison(
+    sweep_results: list[dict[str, Any]],
+    output_path: str = "outputs/charts/safety_comparison.png",
+) -> str:
+    """
+    Plot a table visualization comparing key metrics across safety thresholds.
+
+    Parameters
+    ----------
+    sweep_results : list[dict]
+        Output from run_safety_sweep(). Each dict has keys:
+        threshold, feasible, fleet_size, total_cost_usd, avg_safety_score,
+        total_co2e_tonnes, total_dwt, etc.
+    output_path : str
+        File path for the saved PNG.
+
+    Returns
+    -------
+    str
+        The path to the saved chart file.
+    """
+    if not sweep_results:
+        print("WARNING: No sweep results to plot safety comparison.")
+        return output_path
+
+    # Build table data
+    col_labels = [
+        "Threshold",
+        "Fleet Size",
+        "Total Cost ($M)",
+        "Avg Safety",
+        "Total CO2eq (kt)",
+        "Total DWT (kt)",
+    ]
+
+    cell_text = []
+    cell_colors = []
+
+    for r in sweep_results:
+        if r["feasible"]:
+            row = [
+                f"{r['threshold']:.1f}",
+                str(r["fleet_size"]),
+                f"${r['total_cost_usd'] / 1_000_000:.2f}M",
+                f"{r['avg_safety_score']:.2f}",
+                f"{r['total_co2e_tonnes'] / 1_000:.2f}",
+                f"{r['total_dwt'] / 1_000:.1f}",
+            ]
+            # Color-code: green for base (3.0), yellow/orange for higher
+            if r["threshold"] <= 3.0:
+                row_color = ["#d4edda"] * len(col_labels)  # light green
+            elif r["threshold"] <= 3.5:
+                row_color = ["#fff3cd"] * len(col_labels)  # light yellow
+            elif r["threshold"] <= 4.0:
+                row_color = ["#ffe0b2"] * len(col_labels)  # light orange
+            else:
+                row_color = ["#ffccbc"] * len(col_labels)  # deeper orange
+        else:
+            row = [
+                f"{r['threshold']:.1f}",
+                "-",
+                "-",
+                "-",
+                "-",
+                "-",
+            ]
+            row_color = ["#f8d7da"] * len(col_labels)  # light red
+
+        cell_text.append(row)
+        cell_colors.append(row_color)
+
+    fig, ax = plt.subplots(figsize=(10, 2 + 0.5 * len(sweep_results)))
+    ax.axis("off")
+
+    ax.set_title(
+        "Safety Threshold Comparison",
+        fontsize=14,
+        fontweight="bold",
+        pad=20,
+    )
+
+    table = ax.table(
+        cellText=cell_text,
+        colLabels=col_labels,
+        cellColours=cell_colors,
+        colColours=["#cce5ff"] * len(col_labels),  # light blue header
+        loc="center",
+        cellLoc="center",
+    )
+
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.scale(1.0, 1.8)
+
+    plt.tight_layout()
+
+    # Ensure output directory exists
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+
+    return output_path

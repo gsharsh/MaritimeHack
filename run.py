@@ -30,7 +30,7 @@ from src.sensitivity import (
     run_carbon_price_sweep,
     format_carbon_sweep_table,
 )
-from src.charts import plot_pareto_frontier, plot_fleet_composition
+from src.charts import plot_pareto_frontier, plot_fleet_composition, plot_safety_comparison
 
 
 def main() -> None:
@@ -103,7 +103,20 @@ def main() -> None:
         default="",
         help="Report file name for submission CSV",
     )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        default=False,
+        help="Run everything: --sweep --pareto --carbon-sweep --submit",
+    )
     args = parser.parse_args()
+
+    # --all convenience flag enables all analysis modes
+    if args.all:
+        args.sweep = True
+        args.pareto = True
+        args.carbon_sweep = True
+        args.submit = True
 
     # --- Load data -----------------------------------------------------------
     print("=" * 60)
@@ -238,6 +251,10 @@ def main() -> None:
         # Generate fleet composition chart
         chart_path = plot_fleet_composition(results)
         print(f"\nFleet composition chart saved to: {chart_path}")
+
+        # Generate safety comparison table chart
+        comp_path = plot_safety_comparison(results)
+        print(f"Safety comparison chart saved to: {comp_path}")
 
         print("=" * 60)
 
