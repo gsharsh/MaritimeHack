@@ -654,7 +654,7 @@ def generate_all_visualizations(results_dir: str = 'outputs/sensitivity',
     # 5. Summary dashboard
     plot_combined_summary(data, output_path)
 
-    print(f"\n✓ All visualizations saved to {output_path}")
+    print(f"\nAll visualizations saved to {output_path}")
 
 
 if __name__ == '__main__':

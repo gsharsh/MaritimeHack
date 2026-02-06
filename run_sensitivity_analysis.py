@@ -163,11 +163,11 @@ def format_sensitivity_summary(results: dict) -> str:
     lines.append("SAFETY THRESHOLD SENSITIVITY:")
     for r in results["safety_sensitivity"]:
         if r.get("error") or not r.get("metrics"):
-            lines.append(f"  Safety ≥ {r['threshold']}: INFEASIBLE")
+            lines.append(f"  Safety >= {r['threshold']}: INFEASIBLE")
         else:
             m = r["metrics"]
             lines.append(
-                f"  Safety ≥ {r['threshold']}: "
+                f"  Safety >= {r['threshold']}: "
                 f"Fleet {m['fleet_size']}, "
                 f"Cost ${m['total_cost_usd']:,.0f}, "
                 f"CO2eq {m['total_co2e_tonnes']:,.0f}t"
