@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Produce a correct, optimal fleet selection via MILP that minimizes total cost while satisfying all constraints — this is the submission answer.
-**Current focus:** Phase 6 in progress — Submission CSV done, charts in progress
+**Current focus:** ALL PHASES COMPLETE — Ready for production data and submission
 
 ## Current Position
 
-Phase: 6 of 6 (Submission & Charts) — IN PROGRESS
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-06 — Completed 06-01-PLAN.md
+Phase: 6 of 6 (Submission & Charts) — COMPLETE
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-06 — Completed 06-02-PLAN.md
 
-Progress: █████████░ 95%
+Progress: ██████████ 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
+- Total plans completed: 11
 - Average duration: 3 min
-- Total execution time: 31 min
+- Total execution time: 35 min
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: █████████░ 95%
 | 3 | 1/1 | 3 min | 3 min |
 | 4 | 1/1 | 2 min | 2 min |
 | 5 | 2/2 | 6 min | 3 min |
-| 6 | 1/2 | 5 min | 5 min |
+| 6 | 2/2 | 9 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (2 min), 05-01 (3 min), 05-02 (3 min), 06-01 (5 min)
+- Last 5 plans: 05-01 (3 min), 05-02 (3 min), 06-01 (5 min), 06-02 (4 min)
 - Trend: consistent ~3-5 min/plan
 
 ## Accumulated Context
@@ -57,7 +57,6 @@ Recent decisions affecting current work:
 - Return empty list on infeasible (not raise)
 - Column defaults match per_vessel.csv: final_cost, FC_total, CO2eq
 - Infeasible exits with sys.exit(1) for clean CLI behavior
-- Integer comparison for final_cost, pytest.approx for CO2eq
 - Infeasible thresholds shown as INFEASIBLE in sweep table (not omitted)
 - CO2eq cap added as optional parameter to existing select_fleet_milp() (not a separate function)
 - Min-emissions bound found via dedicated MILP (_solve_min_co2) rather than binary search
@@ -66,18 +65,19 @@ Recent decisions affecting current work:
 - Graceful fallback when carbon_cost column missing: compute as CO2eq * CARBON_PRICE(80)
 - Submission CSV preserves 4-column template format (Header Name, Data Type, Units, Submission)
 - Charts use matplotlib Agg backend for headless CLI execution
+- --all flag for one-command full output generation
 
 ### Deferred Issues
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
 - per_vessel.csv dependency on teammates (not yet available)
-- Deadline: 7 Feb 2026 09:00 SGT — hours away
+- Deadline: 7 Feb 2026 09:00 SGT
 
 ## Session Continuity
 
-Last session: 2026-02-06T13:00:07Z
-Stopped at: Completed 06-01-PLAN.md — Phase 6 plan 1 of 2 done
+Last session: 2026-02-06T13:11:31Z
+Stopped at: Completed 06-02-PLAN.md — All phases complete
 Resume file: None

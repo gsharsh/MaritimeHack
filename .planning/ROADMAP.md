@@ -19,7 +19,7 @@ None
 - [x] **Phase 3: Validation** - Verify MILP against 5 checkpoint vessels and expected ranges
 - [x] **Phase 4: Safety Threshold Sweep** - Re-run MILP at 3.0/3.5/4.0/4.5, compare results (Step 10)
 - [x] **Phase 5: Cost-Emissions Pareto Frontier** - Epsilon-constraint method, shadow carbon prices, carbon price sweep (Step 8)
-- [ ] **Phase 6: Submission & Charts** - Fill submission CSV, Pareto chart, fleet bars, safety table
+- [x] **Phase 6: Submission & Charts** - Fill submission CSV, Pareto chart, fleet bars, safety table
 
 ## Phase Details
 
@@ -88,7 +88,7 @@ Plans:
 
 Plans:
 - [x] 06-01: Submission CSV + Pareto frontier chart (2 tasks) ✓
-- [ ] 06-02: Fleet composition bars + safety comparison table chart (2 tasks)
+- [x] 06-02: Fleet composition bars + safety comparison table chart (2 tasks) ✓
 
 ## Progress
 
@@ -102,4 +102,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 (and 5 in parallel) → 6
 | 3. Validation | 1/1 | Complete | 2026-02-06 |
 | 4. Safety Threshold Sweep | 1/1 | Complete | 2026-02-06 |
 | 5. Cost-Emissions Pareto Frontier | 2/2 | Complete | 2026-02-06 |
-| 6. Submission & Charts | 1/2 | In progress | - |
+| 6. Submission & Charts | 2/2 | Complete | 2026-02-06 |
