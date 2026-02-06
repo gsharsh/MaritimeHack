@@ -77,7 +77,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 05-01: TBD
+- [ ] 05-01: Epsilon-constraint Pareto sweep + shadow carbon prices (2 tasks)
+- [ ] 05-02: Carbon price sweep + CLI wiring (2 tasks)
 
 ### Phase 6: Submission & Charts
 **Goal**: Fill submission_template.csv with base case results (matching column order exactly). Generate matplotlib charts: Pareto frontier curve (cost vs CO2eq), fleet composition stacked bars (by fuel type across thresholds), safety comparison table. Save all to outputs/.
