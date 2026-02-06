@@ -36,21 +36,21 @@
 **Title:** Optimal Fleet at Base Parameters
 
 **Bullets (Speaker Notes):**
-- Fleet of {fleet_size} vessels selected, total cost ${total_cost}, DWT {total_dwt} tonnes
-- Average safety score {avg_safety}, all {fuel_types} fuel types represented
-- Total CO2eq emissions: {total_co2eq} tonnes, total fuel: {total_fuel} tonnes
+- Fleet of 21 vessels selected, total cost $19,706,493.72, DWT 4,577,756 tonnes
+- Average safety score 3.24, all 8 fuel types represented
+- Total CO2eq emissions: 13,095.28 tonnes, total fuel: 4,599.57 tonnes
 - Solver confirms optimality: no feasible fleet exists at lower cost
 
 **Visual:** Key metrics summary table:
 
 | Metric | Value |
 |---|---|
-| Fleet size | {fleet_size} vessels |
-| Total cost | ${total_cost} |
-| Total DWT | {total_dwt} t |
-| Avg safety | {avg_safety} |
-| CO2eq | {total_co2eq} t |
-| Fuel types | {fuel_types} |
+| Fleet size | 21 vessels |
+| Total cost | $19,706,493.72 |
+| Total DWT | 4,577,756 t |
+| Avg safety | 3.24 |
+| CO2eq | 13,095.28 t |
+| Fuel types | 8 |
 
 ---
 
@@ -59,9 +59,9 @@
 **Title:** How Sensitive Is the Optimal Fleet?
 
 **Bullets (Speaker Notes):**
-- Safety threshold sweep (3.0 / 3.5 / 4.0 / 4.5): raising safety to 4.0 increases cost by {pct_increase_s40}%; threshold 4.5 {status_s45}
-- Shadow prices quantify constraint costs: DWT demand ${dwt_shadow_price}/tonne, safety ${safety_shadow_price}/0.1-point
-- Fuel diversity what-if: removing the 8-fuel-type requirement saves ${diversity_savings} ({pct_diversity}%) but drops {fuel_types_lost} fuel types
+- Safety threshold sweep (3.0 / 3.5 / 4.0 / 4.5): raising safety to 4.0 increases cost by 5.4%; threshold 4.5 is feasible at cost $23,251,571.47
+- Shadow prices quantify constraint costs: DWT demand $4.19/tonne, safety $0.00/0.1-point
+- Fuel diversity what-if: removing the 8-fuel-type requirement saves $1,116,062.40 (5.7%) but drops 5 fuel types
 - Tradeoff is clear: moderate safety tightening is affordable, aggressive tightening may be infeasible
 
 **Visual:** `safety_comparison.png` (Figure 3) showing fleet metrics across safety thresholds, or `fleet_composition.png` (Figure 2) showing fuel type mix shifts.
@@ -73,10 +73,10 @@
 **Title:** Cost-Emissions Tradeoffs & Policy Scenarios
 
 **Bullets (Speaker Notes):**
-- Pareto frontier (15-point epsilon-constraint): cost rises from ${cost_min_emissions_pareto} to ${cost_max_emissions_pareto} as CO2eq drops from {base_co2eq} to {min_co2eq} tonnes
-- MACC identifies {macc_below_ref} abatement tranches below $80/tCO2eq reference price (cost-effective now)
-- Carbon price sweep ($80-$200/t): at $200, fleet shifts toward Ammonia/Hydrogen; cost rises to ${cost_cp200}
-- Fleet efficiency: ${cost_per_dwt}/tDWT cost intensity, {co2_per_dwt} tCO2eq/tDWT emissions intensity
+- Pareto frontier (15-point epsilon-constraint): cost rises from $19,706,493.72 to $25,029,360.02 as CO2eq drops from 13,095.28 to 7,521.49 tonnes
+- MACC identifies 2 abatement tranches below $80/tCO2eq reference price (cost-effective now)
+- Carbon price sweep ($80-$200/t): at $200, fleet shifts toward Ammonia/Hydrogen; cost rises to $21,190,674.31
+- Fleet efficiency: $4.3048/tDWT cost intensity, 0.002861 tCO2eq/tDWT emissions intensity
 
 **Visual:** Split layout with `pareto_frontier.png` (Figure 1) on left and `macc.png` (Figure 5) on right. Or use `carbon_price_sweep.png` (Figure 4) as the primary visual.
 
@@ -88,9 +88,9 @@
 
 **Bullets (Speaker Notes):**
 - The MILP-optimal fleet is provably the lowest-cost solution under base parameters
-- Moderate safety tightening (to 3.5-4.0) improves fleet safety at manageable cost ({pct_increase_s40}% increase)
+- Moderate safety tightening (to 3.5-4.0) improves fleet safety at manageable cost (5.4% increase)
 - Carbon pricing above $120/tCO2eq drives meaningful fleet decarbonization; the MACC shows which reductions are cost-effective today
-- Fuel diversity adds ${diversity_savings} but ensures supply-chain resilience against single-fuel disruptions
+- Fuel diversity adds $1,116,062.40 but ensures supply-chain resilience against single-fuel disruptions
 - Next steps: apply this framework to real operational planning with updated vessel data and route-specific constraints
 
 **Visual:** Summary recommendation table or key takeaway callout boxes. Include a "decision matrix" showing the recommended operating point on the Pareto frontier.
