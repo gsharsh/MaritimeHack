@@ -5,34 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Produce a correct, optimal fleet selection via MILP that minimizes total cost while satisfying all constraints — this is the submission answer.
-**Current focus:** Phase 2 in progress — MILP solver implemented, wiring into run.py next
+**Current focus:** Phase 2 complete — ready for Phase 3 (Validation)
 
 ## Current Position
 
-Phase: 2 of 6 (MILP Fleet Optimizer) — IN PROGRESS
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-06 — Completed 02-01-PLAN.md
+Phase: 2 of 6 (MILP Fleet Optimizer) — COMPLETE
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-06 — Completed 02-02-PLAN.md
 
-Progress: ████░░░░░░ 40%
+Progress: █████░░░░░ 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 4 min
-- Total execution time: 14 min
+- Total plans completed: 5
+- Average duration: 3 min
+- Total execution time: 15 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 | 3/3 | 11 min | 4 min |
-| 2 | 1/2 | 3 min | 3 min |
+| 2 | 2/2 | 4 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (5 min), 01-02 (3 min), 01-03 (3 min), 02-01 (3 min)
-- Trend: stable at ~3 min/plan
+- Last 5 plans: 01-02 (3 min), 01-03 (3 min), 02-01 (3 min), 02-02 (1 min)
+- Trend: accelerating
 
 ## Accumulated Context
 
@@ -41,18 +41,18 @@ Progress: ████░░░░░░ 40%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Delete all placeholder code (cost_model.py, data_loader.py, sensitivity.py, optimization.py) — start fresh
+- Delete all placeholder code — start fresh
 - Trust teammates for per_vessel.csv, don't implement Steps 0-6
-- 2024 route scenarios handled by teammate, not in scope
 - Test fixtures: minimal, just enough for MILP testing
 - per_vessel.csv drops into data/processed/, MILP reads it directly
 - All SOP constants in one module (src/constants.py) as single source of truth
-- Kept validate_fleet, total_cost_and_metrics, format_outputs, submission_outputs for Phase 2+ reuse
+- Kept validate_fleet, total_cost_and_metrics, format_outputs, submission_outputs for reuse
 - load_per_vessel() auto-falls back to test fixtures when per_vessel.csv absent
-- validate_per_vessel() enforces production checks separate from load-time checks
 - PuLP enabled in requirements.txt, OR-Tools removed
 - Linearized safety constraint: sum(safety_i - threshold) >= 0
 - Return empty list on infeasible (not raise)
+- Column defaults match per_vessel.csv: final_cost, FC_total, CO2eq
+- Infeasible exits with sys.exit(1) for clean CLI behavior
 
 ### Deferred Issues
 
@@ -65,6 +65,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-06T12:13:00Z
-Stopped at: Completed 02-01-PLAN.md — MILP solver TDD complete
+Last session: 2026-02-06T12:16:00Z
+Stopped at: Completed 02-02-PLAN.md — Phase 2 complete
 Resume file: None

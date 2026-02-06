@@ -15,7 +15,7 @@ None
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Clean Slate & Data Foundation** - Delete placeholder code, set up lookup tables/constants, test fixtures, per_vessel.csv adapter
-- [ ] **Phase 2: MILP Fleet Optimizer** - Replace greedy solver with PuLP MILP (Step 7)
+- [x] **Phase 2: MILP Fleet Optimizer** - Replace greedy solver with PuLP MILP (Step 7)
 - [ ] **Phase 3: Validation** - Verify MILP against 5 checkpoint vessels and expected ranges
 - [ ] **Phase 4: Safety Threshold Sweep** - Re-run MILP at 3.0/3.5/4.0/4.5, compare results (Step 10)
 - [ ] **Phase 5: Cost-Emissions Pareto Frontier** - Epsilon-constraint method, shadow carbon prices, carbon price sweep (Step 8)
@@ -50,7 +50,7 @@ Plans:
 
 Plans:
 - [x] 02-01: TDD — Build select_fleet_milp() with PuLP binary MILP (TDD plan) ✓
-- [ ] 02-02: Wire MILP into run.py, fix column defaults, add CLI args (2 tasks)
+- [x] 02-02: Wire MILP into run.py, fix column defaults, add CLI args (2 tasks) ✓
 
 ### Phase 3: Validation
 **Goal**: Run MILP on test fixtures and verify: (1) each checkpoint vessel's cost matches SOP ±2%, (2) fleet solution falls within expected ranges (25-40 ships, $25M-$40M total, avg safety 3.0-3.5, all 8 fuel types), (3) all constraints satisfied.
@@ -96,7 +96,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 (and 5 in parallel) → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
 | 1. Clean Slate & Data Foundation | 3/3 | Complete | 2026-02-06 |
-| 2. MILP Fleet Optimizer | 1/2 | In progress | - |
+| 2. MILP Fleet Optimizer | 2/2 | Complete | 2026-02-06 |
 | 3. Validation | 0/? | Not started | - |
 | 4. Safety Threshold Sweep | 0/? | Not started | - |
 | 5. Cost-Emissions Pareto Frontier | 0/? | Not started | - |
