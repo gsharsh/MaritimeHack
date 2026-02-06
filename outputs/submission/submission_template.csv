@@ -1,6 +1,6 @@
 Header Name,Data Type,Units,Submission
-team_name,String,-,
-category,String,-,
+team_name,String,-,REPmonkeys
+category,String,-,A
 report_file_name,String,-,
 sum_of_fleet_deadweight,Float,tonnes,4577756
 total_cost_of_fleet,Float,dollars,19706493.720250208
