@@ -77,7 +77,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 05-01: Epsilon-constraint Pareto sweep + shadow carbon prices (2 tasks)
+- [x] 05-01: Epsilon-constraint Pareto sweep + shadow carbon prices (2 tasks) ✓
 - [ ] 05-02: Carbon price sweep + CLI wiring (2 tasks)
 
 ### Phase 6: Submission & Charts
@@ -100,5 +100,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 (and 5 in parallel) → 6
 | 2. MILP Fleet Optimizer | 2/2 | Complete | 2026-02-06 |
 | 3. Validation | 1/1 | Complete | 2026-02-06 |
 | 4. Safety Threshold Sweep | 1/1 | Complete | 2026-02-06 |
-| 5. Cost-Emissions Pareto Frontier | 0/? | Not started | - |
+| 5. Cost-Emissions Pareto Frontier | 1/2 | In progress | - |
 | 6. Submission & Charts | 0/? | Not started | - |
