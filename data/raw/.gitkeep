@@ -1,0 +1,3 @@
+# Place ship dataset, AIS vessel movement data here.
+# Expected: vessel ID, name, type; AIS (date/time, lat/lon, at anchor, in port);
+# DWT, Vref; P, ael, abl; main/aux engine/boiler fuel types; sfc_me, sfc_ae, sfc_ab; safety score.

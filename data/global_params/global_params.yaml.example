@@ -1,0 +1,38 @@
+# Copy to global_params.yaml and fill with hackathon data.
+# Emission factors: tonne CO2, CH4, N2O per tonne of fuel burnt (by fuel type)
+emission_factors:
+  default:
+    CO2: 3.1
+    CH4: 0.0001
+    N2O: 0.00002
+  # Add keys per main_engine_fuel_type / aux types as provided
+
+# Lower Calorific Value MJ/kg by fuel type
+lcv_mj_per_kg:
+  default: 42.5
+  # e.g. HFO: 40.4, MDO: 42.5, LNG: 48.0
+
+# Fuel price USD per GJ
+price_usd_per_gj:
+  default: 15
+  # Fill from problem data
+
+# Carbon price USD per tonne CO2e (2024 EU ETS)
+carbon_price_usd_per_tco2e: 80
+
+# CAPEX: vessel_id -> USD (or derive from base by DWT + multiplier by main_engine_fuel_type)
+# ship_capex_usd: {}  # or path to table
+
+# Capital Recovery Factor
+crf: 0.065
+
+# Safety score (1-5) -> adjustment rate (decimal). Penalty +, Reward -
+safety_score_adjustment_rates:
+  1: 0.10
+  2: 0.05
+  3: 0.0
+  4: -0.02
+  5: -0.05
+
+# Optional: voyage distance nautical miles
+voyage_nm: 2100

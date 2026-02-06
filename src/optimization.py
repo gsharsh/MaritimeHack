@@ -1,0 +1,136 @@
+"""
+Fleet selection optimization.
+Objective: minimize total cost subject to:
+- Combined fleet DWT >= cargo demand D
+- Average fleet safety score >= 3 (configurable)
+- At least one vessel of each main_engine_fuel_type
+- Each ship at most once (no repeat trips)
+"""
+
+from typing import Any
+
+import pandas as pd
+
+
+def validate_fleet(
+    df: pd.DataFrame,
+    selected_ids: list[str | int],
+    cargo_demand_tonnes: float,
+    min_avg_safety: float,
+    require_all_fuel_types: bool,
+) -> tuple[bool, list[str]]:
+    """Check constraints. Returns (ok, list of error messages)."""
+    subset = df[df["vessel_id"].isin(selected_ids)]
+    errors = []
+
+    if subset["dwt"].sum() < cargo_demand_tonnes:
+        errors.append(
+            f"Combined DWT {subset['dwt'].sum()} < demand {cargo_demand_tonnes}"
+        )
+    if subset["safety_score"].mean() < min_avg_safety:
+        errors.append(
+            f"Average safety score {subset['safety_score'].mean():.2f} < {min_avg_safety}"
+        )
+    if require_all_fuel_types:
+        all_types = set(df["main_engine_fuel_type"].dropna().unique())
+        selected_types = set(subset["main_engine_fuel_type"].dropna().unique())
+        missing = all_types - selected_types
+        if missing:
+            errors.append(f"Missing main_engine_fuel_type: {missing}")
+
+    return (len(errors) == 0, errors)
+
+
+def total_cost_and_metrics(
+    df: pd.DataFrame,
+    selected_ids: list[str | int],
+    cost_col: str = "total_cost_usd",
+    fuel_col: str = "fuel_tonnes",
+    co2e_col: str = "co2e_tonnes",
+) -> dict[str, Any]:
+    """Aggregate total DWT, cost, fuel, CO2e, avg safety, unique fuel types, fleet size."""
+    subset = df[df["vessel_id"].isin(selected_ids)]
+    return {
+        "total_dwt": subset["dwt"].sum(),
+        "total_cost_usd": subset[cost_col].sum(),
+        "avg_safety_score": subset["safety_score"].mean(),
+        "num_unique_main_engine_fuel_types": subset["main_engine_fuel_type"].nunique(),
+        "fleet_size": len(selected_ids),
+        "total_fuel_tonnes": subset[fuel_col].sum(),
+        "total_co2e_tonnes": subset[co2e_col].sum(),
+    }
+
+
+def select_fleet_greedy(
+    df: pd.DataFrame,
+    cargo_demand_tonnes: float,
+    min_avg_safety: float = 3.0,
+    require_all_fuel_types: bool = True,
+    cost_col: str = "total_cost_usd",
+) -> list[str | int]:
+    """
+    Greedy fleet selection: sort by cost per DWT (efficiency), add ships until
+    demand is met and constraints satisfied. Then enforce one-per-fuel-type and
+    average safety.
+    """
+    df = df.copy()
+    df["cost_per_dwt"] = df[cost_col] / df["dwt"].clip(lower=1)
+
+    selected: list[str | int] = []
+    remaining = df.sort_values("cost_per_dwt").copy()
+
+    # Ensure at least one per main_engine_fuel_type
+    if require_all_fuel_types:
+        for ft in remaining["main_engine_fuel_type"].unique():
+            cand = remaining[remaining["main_engine_fuel_type"] == ft]
+            if cand.empty:
+                continue
+            best = cand.loc[cand[cost_col].idxmin()]
+            vid = best["vessel_id"]
+            if vid not in selected:
+                selected.append(vid)
+        remaining = remaining[~remaining["vessel_id"].isin(selected)]
+
+    # Fill remaining demand with cheapest cost-per-DWT
+    current_dwt = df[df["vessel_id"].isin(selected)]["dwt"].sum()
+    remaining = remaining.sort_values("cost_per_dwt")
+
+    for _, row in remaining.iterrows():
+        if current_dwt >= cargo_demand_tonnes:
+            break
+        vid = row["vessel_id"]
+        selected.append(vid)
+        current_dwt += row["dwt"]
+
+    # Drop worst cost ships until average safety >= min_avg_safety if needed
+    subset = df[df["vessel_id"].isin(selected)]
+    while subset["safety_score"].mean() < min_avg_safety and len(selected) > 1:
+        # Remove ship that improves avg safety most when removed (lowest safety first)
+        worst = subset.loc[subset["safety_score"].idxmin()]
+        selected.remove(worst["vessel_id"])
+        subset = df[df["vessel_id"].isin(selected)]
+        if subset["dwt"].sum() < cargo_demand_tonnes:
+            selected.append(worst["vessel_id"])
+            break
+
+    ok, errs = validate_fleet(
+        df, selected, cargo_demand_tonnes, min_avg_safety, require_all_fuel_types
+    )
+    if not ok:
+        raise ValueError("Greedy fleet invalid: " + "; ".join(errs))
+
+    return selected
+
+
+def format_outputs(metrics: dict[str, Any], sensitivity_done: bool = False) -> dict[str, Any]:
+    """Format for submission CSV / report."""
+    return {
+        "Total DWT of selected fleet": metrics["total_dwt"],
+        "Total cost of selected fleet (USD)": metrics["total_cost_usd"],
+        "Average fleet safety score": round(metrics["avg_safety_score"], 2),
+        "Number of unique main_engine_fuel_type vessels": metrics["num_unique_main_engine_fuel_types"],
+        "Sensitivity analysis performed": "Yes" if sensitivity_done else "No",
+        "Size of fleet (Number of ships)": metrics["fleet_size"],
+        "Total emission of CO2 equivalent (tonnes)": round(metrics["total_co2e_tonnes"], 2),
+        "Total fuel consumption (tonnes)": round(metrics["total_fuel_tonnes"], 2),
+    }

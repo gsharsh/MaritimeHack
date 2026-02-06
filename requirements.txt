@@ -1,0 +1,10 @@
+# Maritime Hackathon 2026 - Smart Fleet Selection
+pandas>=2.0.0
+pyyaml>=6.0
+# Optional: for alternative solvers (e.g. PuLP, OR-Tools)
+# pulp>=2.7.0
+# ortools>=9.0
+# For notebooks
+# jupyter>=1.0.0
+# pytest for tests
+pytest>=7.0.0

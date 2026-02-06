@@ -1,0 +1,30 @@
+# Maritime Hackathon 2026 - Smart Fleet Selection
+# Global parameters (override with actual hackathon data when provided)
+
+# Cargo demand: monthly bunker tonnes (from MPA Annual Report 2024, Page 10, distributed over 12 months)
+# Example: 49.83 M tonnes/year -> 4.15 M tonnes/month
+cargo_demand_tonnes: 4150000  # Update from MPA 2024 report
+
+# Route: Singapore (A) to Australia West coast (B) - single voyage, no return/round trips
+route:
+  origin: Singapore
+  destination: Australia_West_Coast
+
+# Carbon price (2024 European Exchange) USD per tonne CO2 equivalent
+carbon_price_usd_per_tco2e: 80
+
+# Ship life and finance
+ship_life_years: 30
+# Asset depreciation rate (r), Capital Recovery Factor (CRF) - to be filled from data
+# CAPEX: base by DWT range, multiplier by main_engine_fuel_type
+
+# Constraints
+constraints:
+  min_avg_safety_score: 3.0   # Average fleet safety score >= 3 (1=highest risk, 5=least risk)
+  require_all_fuel_types: true # At least one vessel of each main_engine_fuel_type
+  each_ship_once: true        # No repeat trips
+
+# Sensitivity: stretch objective - re-run with different min_avg_safety_score (e.g. 4.0)
+sensitivity:
+  enabled: false
+  safety_scores_to_try: [3.0, 4.0]
