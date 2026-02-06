@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-06)
 
 **Core value:** Produce a correct, optimal fleet selection via MILP that minimizes total cost while satisfying all constraints — this is the submission answer.
-**Current focus:** v1.0 SHIPPED — Awaiting per_vessel.csv for production run
+**Current focus:** v2.0 Submission Polish — Shadow prices, enhanced charts, case paper & slides
 
 ## Current Position
 
-Phase: 6 of 6 (Submission & Charts) — COMPLETE
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-06 — Completed 06-02-PLAN.md
+Phase: 7 of 10 (Shadow Prices & What-If Analyses)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-02-06 — Milestone v2.0 created
 
-Progress: ██████████ 100%
+Progress: ░░░░░░░░░░ 0%
 
 ## Performance Metrics
 
@@ -76,8 +76,14 @@ None.
 - per_vessel.csv dependency on teammates (not yet available)
 - Deadline: 7 Feb 2026 09:00 SGT
 
+### Roadmap Evolution
+
+- Milestone v1.0 created: MILP fleet optimizer, 6 phases (Phase 1-6)
+- Milestone v1.0 shipped: 2026-02-06, 11 plans, 35 min total
+- Milestone v2.0 created: Submission polish, 4 phases (Phase 7-10)
+
 ## Session Continuity
 
-Last session: 2026-02-06T13:15:00Z
-Stopped at: v1.0 milestone archived — all 6 phases, 11 plans complete
+Last session: 2026-02-06
+Stopped at: Milestone v2.0 initialization
 Resume file: None
