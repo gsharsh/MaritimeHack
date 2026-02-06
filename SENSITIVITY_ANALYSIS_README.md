@@ -136,14 +136,16 @@ python -m src.visualize_sensitivity outputs/sensitivity
 - All scenarios run successfully
 - Ready for analysis once cost aggregation issue resolved
 
-### 2024 Scenarios
+### 2024 Scenarios (no “bear/bull” – these are the three methodology scenarios)
 | Scenario | Congestion | Fuel Price | CII | Emissions (CO₂eq) | Avg CII |
 |----------|-----------|------------|-----|-------------------|---------|
-| Base | None | ×1.00 | No | 0 tonnes | - |
-| 2024 Typical | +48h | ×1.05 | Yes | 21,796 tonnes | 1.1 g/t·NM |
-| 2024 Stress | +72h | ×1.10 | Yes | 32,693 tonnes | 1.6 g/t·NM |
+| Base (Idealised) | None | ×1.00 | No | From cost model | - |
+| 2024 Typical | +48h | ×1.05 | Yes | ~22k tonnes | ~1.1 g/t·NM |
+| 2024 Stress | +72h | ×1.10 | Yes | ~33k tonnes | ~1.6 g/t·NM |
 
-**Key Insight:** Port congestion and fuel price increase emissions by 50% (Stress vs Base)
+**Key Insight:** Port congestion and fuel price increase emissions (Stress vs Typical ~50%). There are no separate “bear” or “bull” cases; the methodology uses these three scenarios only.
+
+**Why fleet size can be the same across scenarios:** Each scenario re-runs the MILP on adjusted costs (congestion, fuel price, CII). If the same fleet stays optimal under all three, fleet size is unchanged. If costs shift enough, the optimizer can choose a different fleet and fleet size will change.
 
 ## Visualizations Generated
 
@@ -153,12 +155,25 @@ Located in `outputs/sensitivity/plots/`:
 2. **`summary_dashboard.png`** - Comprehensive single-page overview
 3. (More charts available when cost data is corrected)
 
+## FAQ / Clarifications
+
+- **Why was base case cost/emissions $0 and 0 tonnes?**  
+  When using seed ships, the runner was not loading seed global params, so fuel prices and emission factors were empty and the cost model returned zero. **Fixed:** when `--ships` points to seed data, the runner now loads `data/seed/seed_global_params.json`, and the cost model uses each row’s `capex_usd` when `ship_capex_usd` is not in global params. Re-run with `--ships data/seed/seed_vessels.csv` to get non-zero base case cost and CO₂e.
+
+- **Where are the scenario outputs?**  
+  - **CSV:** `outputs/sensitivity/2024_scenarios.csv` (one row per scenario).  
+  - **JSON:** `outputs/sensitivity/sensitivity_results_*.json` → `scenarios_2024` array.  
+  - **Plots:** `outputs/sensitivity/plots/2024_scenario_comparison.png`.
+
+- **Why doesn’t fleet size change between Base / Typical / Stress?**  
+  The optimizer is re-run for each scenario. If the same fleet remains optimal under the adjusted costs (congestion, fuel price, CII), fleet size stays the same. Different inputs can lead to a different optimal fleet and thus different fleet size.
+
 ## Outstanding Work
 
 ### To Complete Before Submission
-1. **Fix cost aggregation** in `total_cost_and_metrics()` - costs showing as $0
+1. ~~**Fix cost aggregation**~~ Addressed by loading seed global params and using row `capex_usd` when using seed data.
 2. **Integrate real AIS pipeline** - Replace seed data with processed vessel_movements
-3. **Generate full visualizations** - All chart types once costs are correct
+3. **Generate full visualizations** - All chart types (costs now populated with seed data)
 4. **Sensitivity matrix** - Requires valid cost data
 
 ### Validation Checklist

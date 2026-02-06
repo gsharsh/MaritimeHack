@@ -140,14 +140,22 @@ def main() -> None:
     print(f"Loaded {len(df)} vessels")
     print()
 
-    # Load global parameters
+    # Load global parameters (use seed params when using seed ships so cost/CO2e are non-zero)
+    ships_path_resolved = Path(ships_path).resolve()
+    seed_global_path = data_path("seed", "seed_global_params.json")
     global_params_path = str(data_path("global_params", "global_params.yaml"))
     global_params = {}
-    if Path(global_params_path).exists():
+    if "seed" in ships_path_resolved.parts or ships_path_resolved.name == "seed_vessels.csv":
+        if Path(seed_global_path).exists():
+            global_params = load_global_params(seed_global_path)
+            print(f"Loaded global parameters from {seed_global_path} (seed data)")
+        else:
+            print("Warning: Seed ships used but seed_global_params.json not found")
+    if not global_params and Path(global_params_path).exists():
         global_params = load_global_params(global_params_path)
         print(f"Loaded global parameters from {global_params_path}")
-    else:
-        print("Warning: Global params not found, using defaults")
+    if not global_params:
+        print("Warning: Global params not found, using defaults (cost/emissions may be zero)")
 
     # Calculate voyage hours
     voyage_nm = global_params.get("voyage_nm", SINGAPORE_TO_AU_WEST_NM)

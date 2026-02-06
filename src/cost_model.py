@@ -104,6 +104,9 @@ def ship_total_cost_usd(
         global_params.get("lcv_mj_per_kg", {}),
         global_params.get("price_usd_per_gj", {}),
     )
+    # If emission_factors is empty (e.g. global_params not loaded for seed data),
+    # co2e_tonnes() returns 0 because cf.get("CO2", 0) etc. are all 0. Load
+    # data/seed/seed_global_params.json when using seed ships to get non-zero CO2e.
     co2e = co2e_tonnes(
         fuel_tonnes,
         global_params.get("emission_factors", {}),
@@ -111,7 +114,7 @@ def ship_total_cost_usd(
     )
     carbon_cost = co2e * global_params.get("carbon_price_usd_per_tco2e", 80)
 
-    capex = global_params.get("ship_capex_usd", {}).get(str(row.get("vessel_id")), 0)
+    capex = global_params.get("ship_capex_usd", {}).get(str(row.get("vessel_id")), row.get("capex_usd", 0))
     crf = global_params.get("crf", 0.05)
     ownership = amortized_ownership_per_month_usd(capex, crf)
 
