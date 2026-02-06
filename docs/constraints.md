@@ -1,8 +1,10 @@
 # Constraints
 
-## Mathematical Formulation
+## Part A: Base MILP (Cost-Minimising)
 
-The optimisation is a **Binary Integer Linear Program (MILP)**.
+### Mathematical Formulation
+
+The base optimisation is a **Binary Integer Linear Program (MILP)**.
 
 **Decision variables:** `x_i in {0, 1}` for each vessel i = 1..108, where `x_i = 1` means vessel i is selected.
 
@@ -67,6 +69,65 @@ SUM(x_i * CO2eq_i) <= epsilon
 Used in the epsilon-constraint method to trace the cost--emissions Pareto frontier. Progressively tightening epsilon from 13,095 t (unconstrained) to 7,521 t (minimum achievable) reveals the marginal abatement cost curve.
 
 - **Marginal abatement cost** ranges from ~$21/tCO2eq (cheap initial reductions) to $3,839/tCO2eq (aggressive decarbonisation)
+
+---
+
+## Part B: Min-Max Robust MILP
+
+The robust formulation selects **one fleet** that minimises the **worst-case cost** across multiple stress scenarios, rather than optimising for a single set of assumptions.
+
+### Mathematical Formulation
+
+**Decision variables:**
+- `x_i in {0, 1}` for each vessel i = 1..108 (same binary selection)
+- `Z >= 0` -- continuous variable representing worst-case fleet cost
+
+**Objective:** `minimize Z`
+
+### Robust Constraints
+
+#### 6. Scenario Cost Bounds
+
+```
+For each scenario s in {base, safety_stress, carbon_stress, joint_stress}:
+    SUM(x_i * c_{i,s}) <= Z
+```
+
+The worst-case cost Z must be at least as large as the fleet's total cost under every scenario. The solver minimises Z, which forces the fleet to perform well across all scenarios simultaneously.
+
+Per-vessel cost under each scenario adjusts only the carbon component:
+```
+c_{i,s} = final_cost_i - carbon_cost_i + CO2eq_i * scenario_carbon_price
+```
+
+#### Scenario Definitions
+
+| Scenario | Carbon Price ($/tCO2eq) | Min Avg Safety |
+|----------|------------------------|----------------|
+| base | 80 | 3.0 |
+| safety_stress | 80 | 4.0 |
+| carbon_stress | 160 | 3.0 |
+| joint_stress | 160 | 4.0 |
+
+#### 7. Strictest Safety Threshold
+
+The robust fleet uses the **maximum safety threshold** across all scenarios (4.0), so the fleet is feasible under every scenario without re-selection.
+
+#### Structural Constraints
+
+Constraints 1 (DWT), 3 (fuel diversity), and 4 (binary) are identical to the base MILP.
+
+### Robust Results (Production Run)
+
+| Metric | Base MILP | Min-Max Robust |
+|--------|-----------|----------------|
+| Fleet size | 21 | 22 |
+| Total cost (base scenario) | $19.7M | $20.8M |
+| Worst-case cost (Z) | -- | $21.7M |
+| Avg safety score | 3.24 | 4.00 |
+| CO2-equivalent | 13,095 t | 11,756 t |
+
+The robust fleet costs 5.4% more in the base scenario but limits worst-case exposure to $21.7M across all stress scenarios. It also achieves higher safety (4.0 vs 3.24) and lower emissions (11,756 vs 13,095 tCO2eq) as a side-effect of hedging against carbon price increases.
 
 ---
 
