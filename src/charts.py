@@ -286,3 +286,126 @@ def plot_safety_comparison(
     plt.close(fig)
 
     return output_path
+
+
+def plot_macc(
+    pareto_results: list[dict[str, Any]],
+    output_path: str = "outputs/charts/macc.png",
+) -> str:
+    """
+    Plot Marginal Abatement Cost Curve (MACC) from Pareto frontier data.
+
+    Each bar represents a Pareto step: width = CO2 reduction, height = shadow carbon price.
+    Bars are colored by cost: green (<$100/t), yellow ($100-$500/t), red (>$500/t).
+
+    Parameters
+    ----------
+    pareto_results : list[dict]
+        Output from run_pareto_sweep(). Each dict has keys:
+        feasible, total_co2e_tonnes, total_cost_usd, shadow_carbon_price.
+    output_path : str
+        File path for the saved PNG.
+
+    Returns
+    -------
+    str
+        The path to the saved chart file.
+    """
+    # Filter to feasible points with a shadow_carbon_price
+    steps = [
+        r for r in pareto_results
+        if r["feasible"] and r.get("shadow_carbon_price") is not None
+    ]
+
+    if not steps:
+        print("WARNING: No feasible Pareto points with shadow prices to plot MACC.")
+        return output_path
+
+    # Sort by shadow_carbon_price ascending (cheapest abatement first)
+    steps.sort(key=lambda r: r["shadow_carbon_price"])
+
+    # Base case is the max-emissions feasible point (first feasible point, no shadow price)
+    base_co2 = max(
+        r["total_co2e_tonnes"]
+        for r in pareto_results
+        if r["feasible"]
+    )
+
+    # Build bar data: each step's CO2 reduction from base and marginal cost
+    bar_widths = []
+    bar_heights = []
+    bar_lefts = []
+    cumulative = 0.0
+
+    for step in steps:
+        reduction = base_co2 - step["total_co2e_tonnes"]
+        width = reduction - cumulative
+        if width <= 0:
+            continue
+        bar_lefts.append(cumulative)
+        bar_widths.append(width)
+        bar_heights.append(step["shadow_carbon_price"])
+        cumulative = reduction
+
+    if not bar_widths:
+        print("WARNING: No positive CO2 reduction steps for MACC.")
+        return output_path
+
+    # Color bars by cost: green < $100, yellow $100-$500, red > $500
+    bar_colors = []
+    for h in bar_heights:
+        if h < 100:
+            bar_colors.append("#22c55e")  # green
+        elif h < 500:
+            bar_colors.append("#eab308")  # yellow
+        else:
+            bar_colors.append("#ef4444")  # red
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # Draw bars (waterfall-style step bars)
+    ax.bar(
+        bar_lefts,
+        bar_heights,
+        width=bar_widths,
+        align="edge",
+        color=bar_colors,
+        edgecolor="white",
+        linewidth=0.5,
+    )
+
+    # Reference line at current carbon price ($80/t)
+    ax.axhline(y=80, color="gray", linestyle="--", linewidth=1.5, alpha=0.7)
+    ax.text(
+        cumulative * 0.02,
+        82,
+        "Current carbon price ($80/t)",
+        fontsize=9,
+        color="gray",
+        va="bottom",
+    )
+
+    # Annotate total abatement potential
+    ax.annotate(
+        f"Total abatement:\n{cumulative:,.0f} t CO2eq",
+        xy=(cumulative, 0),
+        xytext=(-15, 30),
+        textcoords="offset points",
+        fontsize=9,
+        ha="right",
+        arrowprops=dict(arrowstyle="->", color="gray"),
+        bbox=dict(boxstyle="round,pad=0.3", facecolor="lightyellow", edgecolor="gray"),
+    )
+
+    ax.set_xlabel("Cumulative CO2eq Reduction (tonnes)", fontsize=12)
+    ax.set_ylabel("Marginal Cost ($/tCO2eq)", fontsize=12)
+    ax.set_title("Marginal Abatement Cost Curve", fontsize=14, fontweight="bold")
+    ax.grid(True, alpha=0.3, linestyle="--", axis="y")
+
+    plt.tight_layout()
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+
+    return output_path
