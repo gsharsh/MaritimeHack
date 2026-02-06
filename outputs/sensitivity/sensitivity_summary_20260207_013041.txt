@@ -13,7 +13,7 @@ SAFETY THRESHOLD SENSITIVITY (fixed base fleet):
   Safety >= 3.0: Fleet 22, Cost $20,765,143, CO2eq 11,756t
   Safety >= 3.5: Fleet 22, Cost $20,765,143, CO2eq 11,756t
   Safety >= 4.0: Fleet 22, Cost $20,765,143, CO2eq 11,756t
-  Safety ≥ 4.5: constraint not met
+  Safety >= 4.5: constraint not met
 
 CARBON PRICE SENSITIVITY (fixed base fleet):
   $80/tCO2eq: Fleet 22, Cost $20,765,143, CO2eq 11,756t

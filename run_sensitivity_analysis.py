@@ -193,7 +193,7 @@ def format_sensitivity_summary(results: dict) -> str:
     lines.append("SAFETY THRESHOLD SENSITIVITY (fixed base fleet):")
     for r in results["safety_sensitivity"]:
         if r.get("error") or not r.get("metrics"):
-            lines.append(f"  Safety ≥ {r['threshold']}: constraint not met")
+            lines.append(f"  Safety >= {r['threshold']}: constraint not met")
         else:
             m = r["metrics"]
             lines.append(
