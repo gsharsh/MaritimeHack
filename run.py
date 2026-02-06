@@ -30,7 +30,7 @@ from src.sensitivity import (
     run_carbon_price_sweep,
     format_carbon_sweep_table,
 )
-from src.charts import plot_pareto_frontier
+from src.charts import plot_pareto_frontier, plot_fleet_composition
 
 
 def main() -> None:
@@ -234,6 +234,10 @@ def main() -> None:
                 print(f"  Threshold {r['threshold']}: {len(counts)} types — {composition}")
             else:
                 print(f"  Threshold {r['threshold']}: INFEASIBLE")
+
+        # Generate fleet composition chart
+        chart_path = plot_fleet_composition(results)
+        print(f"\nFleet composition chart saved to: {chart_path}")
 
         print("=" * 60)
 
