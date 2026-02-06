@@ -23,34 +23,36 @@ Produce a correct, optimal fleet selection via MILP that minimizes total cost wh
 - ✓ **Test fixtures from checkpoint vessels** — v1.0: 5 SOP checkpoint vessels in `tests/fixtures/`
 - ✓ **Submission CSV generation** — v1.0: `--submit` flag fills `submission_template.csv`
 - ✓ **Charts** — v1.0: Pareto frontier, fleet composition stacked bars, safety comparison table
+- ✓ **Shadow prices & what-if analyses** — v2.0: DWT/safety perturbation, diversity what-if, fleet efficiency
+- ✓ **Enhanced charts** — v2.0: MACC from Pareto data, carbon price sweep dual-subplot
+- ✓ **Case paper & presentation** — v2.0: 3-page paper + 6-slide outline with production numbers
+- ✓ **Production validation** — v2.0: 108-vessel run, independent constraint checks, submission packaged
 
 ### Active
 
-None — all v1.0 requirements shipped.
+None — all v2.0 requirements shipped.
 
 ### Out of Scope
 
 - Steps 0-6 (data processing pipeline) — teammates A+B's responsibility
 - Step 9 (carbon price sensitivity) — Teammate C's responsibility
-- Case paper writing — team effort after results are ready
-- Presentation slides — team effort after results are ready
 
 ## Context
 
 **Hackathon:** Maritime Hackathon 2026, organized by MPA Singapore. Submission deadline: 7 Feb 2026 09:00 SGT.
 
-**Current state:** v1.0 shipped. 1,700 LOC Python. Tech stack: PuLP, pandas, matplotlib, numpy.
+**Current state:** v2.0 shipped. 3,639 LOC Python. Tech stack: PuLP, pandas, matplotlib, numpy. Production run complete with 108-vessel dataset: 21 vessels selected, $19.7M cost, all constraints satisfied.
 
 **Team structure:** Nickolas handles Steps 7, 8, 10 (optimization). Teammates A+B handle Steps 0-6 (data processing → per_vessel.csv). Teammate C handles Step 9 (carbon price sensitivity).
 
-**Data handoff:** Teammates will produce `data/processed/per_vessel.csv` with 108 rows. System auto-falls back to test fixtures when per_vessel.csv is absent.
+**Data handoff:** per_vessel.csv received with 108 rows. Production run complete.
 
-**Production run:** `python run.py --all --team-name "X" --category "A" --report-file "report.pdf"`
+**Production run:** `python run.py --all --team-name "REPmonkeys" --category "A" --report-file "case_paper.pdf"`
 
 ## Constraints
 
 - **Timeline**: Submission due 7 Feb 2026 09:00 SGT
-- **Dependency**: Requires per_vessel.csv from teammates — code ready, awaiting data
+- **Dependency**: per_vessel.csv received and processed
 - **Tech stack**: Python, PuLP for MILP, matplotlib for charts, pandas for data
 - **Submission format**: Must match `given_data/submission_template.csv` column order exactly
 
@@ -68,6 +70,10 @@ None — all v1.0 requirements shipped.
 | Epsilon-constraint for Pareto | Standard OR technique, re-uses existing MILP | ✓ Good |
 | Shadow carbon price computation | Marginal cost per tonne CO2eq reduced | ✓ Good |
 | Agg backend for matplotlib | Avoids Tkinter issues in headless/CLI mode | ✓ Good |
+| Shadow prices via perturbation | +1% DWT, +0.1 safety — standard OR technique | ✓ Good |
+| MACC from Pareto shadow prices | Sorted cheapest-first, color-coded by cost tier | ✓ Good |
+| Placeholder syntax for deliverables | {placeholder} filled at production run time | ✓ Good |
+| Independent constraint validation | Separate from MILP — cross-checks submission | ✓ Good |
 
 ---
-*Last updated: 2026-02-06 after v1.0 milestone*
+*Last updated: 2026-02-06 after v2.0 milestone*
