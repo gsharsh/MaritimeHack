@@ -87,7 +87,8 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 06-01: TBD
+- [ ] 06-01: Submission CSV + Pareto frontier chart (2 tasks)
+- [ ] 06-02: Fleet composition bars + safety comparison table chart (2 tasks)
 
 ## Progress
 
@@ -101,4 +102,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 (and 5 in parallel) → 6
 | 3. Validation | 1/1 | Complete | 2026-02-06 |
 | 4. Safety Threshold Sweep | 1/1 | Complete | 2026-02-06 |
 | 5. Cost-Emissions Pareto Frontier | 2/2 | Complete | 2026-02-06 |
-| 6. Submission & Charts | 0/? | Not started | - |
+| 6. Submission & Charts | 0/2 | Not started | - |
