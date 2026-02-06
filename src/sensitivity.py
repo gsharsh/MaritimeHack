@@ -288,6 +288,140 @@ def format_pareto_table(results: list[dict[str, Any]]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def compute_shadow_prices(
+    df: pd.DataFrame,
+    cargo_demand: float = MONTHLY_DEMAND,
+    safety_threshold: float = SAFETY_THRESHOLD,
+) -> dict[str, Any]:
+    """
+    Compute shadow prices via constraint perturbation.
+
+    Shadow price = (perturbed_cost - base_cost) / perturbation_size.
+    Two constraints perturbed:
+    1. DWT demand: +1% (cargo_demand * 1.01)
+    2. Safety threshold: +0.1 (e.g. 3.0 -> 3.1)
+
+    Returns dict with base_cost, perturbed costs, fleet sizes, and shadow prices.
+    """
+    # --- Base case ---
+    base_ids = select_fleet_milp(df, cargo_demand=cargo_demand, min_avg_safety=safety_threshold)
+    if not base_ids:
+        return {
+            "base_cost": None,
+            "base_fleet_size": None,
+            "dwt_shadow_price": None,
+            "safety_shadow_price": None,
+            "perturbed_cost_dwt": None,
+            "perturbed_cost_safety": None,
+            "perturbed_fleet_size_dwt": None,
+            "perturbed_fleet_size_safety": None,
+            "dwt_perturbation": None,
+            "safety_perturbation": None,
+            "note": "base case infeasible",
+        }
+
+    base_metrics = total_cost_and_metrics(df, base_ids)
+    base_cost = base_metrics["total_cost_usd"]
+    base_fleet_size = base_metrics["fleet_size"]
+
+    result: dict[str, Any] = {
+        "base_cost": base_cost,
+        "base_fleet_size": base_fleet_size,
+        "cargo_demand": cargo_demand,
+        "safety_threshold": safety_threshold,
+    }
+
+    # --- DWT demand perturbation (+1%) ---
+    dwt_delta = cargo_demand * 0.01
+    perturbed_demand = cargo_demand + dwt_delta
+    dwt_ids = select_fleet_milp(df, cargo_demand=perturbed_demand, min_avg_safety=safety_threshold)
+
+    if dwt_ids:
+        dwt_metrics = total_cost_and_metrics(df, dwt_ids)
+        result["perturbed_cost_dwt"] = dwt_metrics["total_cost_usd"]
+        result["perturbed_fleet_size_dwt"] = dwt_metrics["fleet_size"]
+        result["dwt_perturbation"] = dwt_delta
+        result["dwt_shadow_price"] = (dwt_metrics["total_cost_usd"] - base_cost) / dwt_delta
+    else:
+        result["perturbed_cost_dwt"] = None
+        result["perturbed_fleet_size_dwt"] = None
+        result["dwt_perturbation"] = dwt_delta
+        result["dwt_shadow_price"] = None
+        result["dwt_note"] = "infeasible at +1% DWT perturbation"
+
+    # --- Safety threshold perturbation (+0.1) ---
+    safety_delta = 0.1
+    perturbed_safety = safety_threshold + safety_delta
+    safety_ids = select_fleet_milp(df, cargo_demand=cargo_demand, min_avg_safety=perturbed_safety)
+
+    if safety_ids:
+        safety_metrics = total_cost_and_metrics(df, safety_ids)
+        result["perturbed_cost_safety"] = safety_metrics["total_cost_usd"]
+        result["perturbed_fleet_size_safety"] = safety_metrics["fleet_size"]
+        result["safety_perturbation"] = safety_delta
+        result["safety_shadow_price"] = (safety_metrics["total_cost_usd"] - base_cost) / safety_delta
+    else:
+        result["perturbed_cost_safety"] = None
+        result["perturbed_fleet_size_safety"] = None
+        result["safety_perturbation"] = safety_delta
+        result["safety_shadow_price"] = None
+        result["safety_note"] = "infeasible at +0.1 safety perturbation"
+
+    return result
+
+
+def format_shadow_prices(shadow_results: dict[str, Any]) -> str:
+    """
+    Format shadow price results as a readable text table.
+
+    Returns a multi-line string showing constraint, base/perturbed values,
+    costs, shadow price, and interpretation.
+    """
+    if shadow_results.get("base_cost") is None:
+        return "  Base case is infeasible — no shadow prices available."
+
+    lines = []
+    lines.append(f"  {'Constraint':<20} {'Base Value':>14} {'Perturbed':>14} "
+                 f"{'Base Cost ($)':>16} {'New Cost ($)':>16} {'Shadow Price':>16} {'Interpretation'}")
+    lines.append(f"  {'-' * 20} {'-' * 14} {'-' * 14} {'-' * 16} {'-' * 16} {'-' * 16} {'-' * 30}")
+
+    # DWT demand row
+    cargo = shadow_results.get("cargo_demand", 0)
+    dwt_perturbed = cargo * 1.01
+    dwt_sp = shadow_results.get("dwt_shadow_price")
+    if dwt_sp is not None:
+        lines.append(
+            f"  {'DWT Demand':<20} {cargo:>14,.0f} {dwt_perturbed:>14,.0f} "
+            f"{shadow_results['base_cost']:>16,.2f} {shadow_results['perturbed_cost_dwt']:>16,.2f} "
+            f"{'$' + f'{dwt_sp:,.2f}' + '/t':>16} {'$/tonne additional capacity'}"
+        )
+    else:
+        note = shadow_results.get("dwt_note", "infeasible")
+        lines.append(
+            f"  {'DWT Demand':<20} {cargo:>14,.0f} {dwt_perturbed:>14,.0f} "
+            f"{shadow_results['base_cost']:>16,.2f} {'N/A':>16} {'N/A':>16} {note}"
+        )
+
+    # Safety threshold row
+    safety = shadow_results.get("safety_threshold", 0)
+    safety_perturbed = safety + 0.1
+    safety_sp = shadow_results.get("safety_shadow_price")
+    if safety_sp is not None:
+        lines.append(
+            f"  {'Safety Threshold':<20} {safety:>14.1f} {safety_perturbed:>14.1f} "
+            f"{shadow_results['base_cost']:>16,.2f} {shadow_results['perturbed_cost_safety']:>16,.2f} "
+            f"{'$' + f'{safety_sp:,.2f}' + '/pt':>16} {'$/unit safety increase'}"
+        )
+    else:
+        note = shadow_results.get("safety_note", "infeasible")
+        lines.append(
+            f"  {'Safety Threshold':<20} {safety:>14.1f} {safety_perturbed:>14.1f} "
+            f"{shadow_results['base_cost']:>16,.2f} {'N/A':>16} {'N/A':>16} {note}"
+        )
+
+    return "\n".join(lines)
+
+
 def run_carbon_price_sweep(
     df: pd.DataFrame,
     carbon_prices: list[float] | None = None,
