@@ -4,8 +4,11 @@ Run fleet selection: load per-vessel data, run MILP optimizer, print results.
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
+
+import pandas as pd
 
 # Add project root for imports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -17,6 +20,7 @@ from src.optimization import (
     validate_fleet,
     total_cost_and_metrics,
     format_outputs,
+    submission_outputs,
 )
 from src.sensitivity import (
     run_safety_sweep,
@@ -73,6 +77,30 @@ def main() -> None:
         action="store_true",
         default=False,
         help="Run carbon price sweep at $80/$120/$160/$200",
+    )
+    parser.add_argument(
+        "--submit",
+        action="store_true",
+        default=False,
+        help="Fill submission CSV with base case MILP results",
+    )
+    parser.add_argument(
+        "--team-name",
+        type=str,
+        default="",
+        help="Team name for submission CSV",
+    )
+    parser.add_argument(
+        "--category",
+        type=str,
+        default="",
+        help="Category for submission CSV",
+    )
+    parser.add_argument(
+        "--report-file",
+        type=str,
+        default="",
+        help="Report file name for submission CSV",
     )
     args = parser.parse_args()
 
@@ -151,6 +179,39 @@ def main() -> None:
     print(f"\nSelected vessel IDs ({len(selected_ids)}):")
     print(f"  {selected_ids}")
     print("=" * 60)
+
+    # --- Submission CSV ------------------------------------------------------
+    if args.submit:
+        print(f"\n{'=' * 60}")
+        print("Submission CSV Generation")
+        print(f"{'=' * 60}")
+
+        sub_values = submission_outputs(
+            metrics,
+            sensitivity_done=True,
+            team_name=args.team_name,
+            category=args.category,
+            report_file_name=args.report_file,
+        )
+
+        # Read the template
+        template_path = Path("given_data/submission_template.csv")
+        sub_df = pd.read_csv(template_path, encoding="utf-8-sig")
+
+        # Map Header Name -> Submission value
+        sub_df["Submission"] = sub_df["Header Name"].map(sub_values)
+
+        # Write to outputs/submission/
+        out_dir = Path("outputs/submission")
+        os.makedirs(out_dir, exist_ok=True)
+        out_path = out_dir / "submission_template.csv"
+        sub_df.to_csv(out_path, index=False)
+
+        print(f"\nSubmission values:")
+        for key, val in sub_values.items():
+            print(f"  {key}: {val}")
+        print(f"\nWritten to: {out_path}")
+        print("=" * 60)
 
     # --- Safety threshold sweep ----------------------------------------------
     if args.sweep:
