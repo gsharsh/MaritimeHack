@@ -14,7 +14,7 @@ None
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Clean Slate & Data Foundation** - Delete placeholder code, set up lookup tables/constants, test fixtures, per_vessel.csv adapter
+- [x] **Phase 1: Clean Slate & Data Foundation** - Delete placeholder code, set up lookup tables/constants, test fixtures, per_vessel.csv adapter
 - [ ] **Phase 2: MILP Fleet Optimizer** - Replace greedy solver with PuLP MILP (Step 7)
 - [ ] **Phase 3: Validation** - Verify MILP against 5 checkpoint vessels and expected ranges
 - [ ] **Phase 4: Safety Threshold Sweep** - Re-run MILP at 3.0/3.5/4.0/4.5, compare results (Step 10)
@@ -39,7 +39,7 @@ Specifics:
 Plans:
 - [x] 01-01: Delete placeholder code & create constants/lookup tables (2 tasks) ✓
 - [x] 01-02: Build test fixtures & per_vessel.csv adapter (2 tasks) ✓
-- [ ] 01-03: Update run.py, config, verify end-to-end (2 tasks)
+- [x] 01-03: Update run.py, config, verify end-to-end (2 tasks) ✓
 
 ### Phase 2: MILP Fleet Optimizer
 **Goal**: Replace select_fleet_greedy() with PuLP MILP. Binary decision variables x_i ∈ {0,1}, objective min Σ x_i × final_cost_i, constraints: DWT >= 4,576,667, Σ x_i × (safety_i - 3.0) >= 0, ∀ fuel_type Σ x_i >= 1. Solve with CBC, extract selected fleet.
@@ -94,7 +94,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 (and 5 in parallel) → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|---------------|--------|-----------|
-| 1. Clean Slate & Data Foundation | 2/3 | In progress | - |
+| 1. Clean Slate & Data Foundation | 3/3 | Complete | 2026-02-06 |
 | 2. MILP Fleet Optimizer | 0/? | Not started | - |
 | 3. Validation | 0/? | Not started | - |
 | 4. Safety Threshold Sweep | 0/? | Not started | - |
