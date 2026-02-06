@@ -7,7 +7,7 @@ MILP-based fleet optimization for the Smart Fleet Selection challenge. Starting 
 ## Milestones
 
 - ✅ **v1.0 Maritime Fleet Optimizer** - [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) (Phases 1-6, shipped 2026-02-06)
-- 🚧 **v2.0 Submission Polish** - Phases 7-10 (in progress)
+- ✅ **v2.0 Submission Polish** - Phases 7-10 (shipped 2026-02-06)
 
 ## Domain Expertise
 
@@ -27,7 +27,7 @@ None
 
 </details>
 
-### 🚧 v2.0 Submission Polish (In Progress)
+### ✅ v2.0 Submission Polish (SHIPPED 2026-02-06)
 
 **Milestone Goal:** Enhance optimizer outputs with shadow prices, additional charts (MACC, fleet composition), what-if analyses, and produce final deliverables (case paper + slides) for Maritime Hackathon 2026 submission.
 
@@ -69,7 +69,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 10-01: TBD
+- [x] 10-01: Run production pipeline, fill placeholders, validate constraints — 2026-02-06
 
 ## Progress
 
@@ -84,4 +84,4 @@ Plans:
 | 7. Shadow Prices & What-If Analyses | v2.0 | 1/1 | Complete | 2026-02-06 |
 | 8. Enhanced Charts | v2.0 | 1/1 | Complete | 2026-02-06 |
 | 9. Case Paper & Slides | v2.0 | 1/1 | Complete | 2026-02-06 |
-| 10. Final Validation & Submission | v2.0 | 0/? | Not started | - |
+| 10. Final Validation & Submission | v2.0 | 1/1 | Complete | 2026-02-06 |
